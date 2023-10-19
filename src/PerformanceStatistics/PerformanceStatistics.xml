@@ -4,6 +4,11 @@
         <name>PerformanceStatistics</name>
     </assembly>
     <members>
+        <member name="T:PerformanceStatistics.IPerformanceStatistics">
+            <summary>
+            Base class for performance statistics.
+            </summary>
+        </member>
         <member name="F:PerformanceStatistics.IPerformanceStatistics.CpuUtilizationPercent">
             <summary>
             CPU utilization percentage.
@@ -66,6 +71,11 @@
             <param name="sourcePort">Source port.</param>
             <param name="destPort">Destination port.</param>
             <returns>Array of TCP connections.</returns>
+        </member>
+        <member name="T:PerformanceStatistics.WindowsPerformanceStatistics">
+            <summary>
+            Windows performance statistics.
+            </summary>
         </member>
         <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.CpuUtilizationPercent">
             <summary>
