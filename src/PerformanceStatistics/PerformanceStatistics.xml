@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>PerformanceStatistics</name>
+    </assembly>
+    <members>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.MemoryFreeMegabytes">
+            <summary>
+            Memory free in Megabytes.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskReadOperations">
+            <summary>
+            Total disk read operations.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskWriteOperations">
+            <summary>
+            Total disk write operations.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskReadQueue">
+            <summary>
+            Total disk read queue.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskWriteQueue">
+            <summary>
+            Total disk write queue.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskFreePercent">
+            <summary>
+            Total disk free percent.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskFreeMegabytes">
+            <summary>
+            Total disk free megabytes.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskSizeMegabytes">
+            <summary>
+            Total disk size megabytes.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskUsedMegabytes">
+            <summary>
+            Total disk used megabytes.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.IPerformanceStatistics.ActiveTcpConnections">
+            <summary>
+            Active TCP connections.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.IPerformanceStatistics.GetActiveTcpConnections(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Retrieve active TCP connections by port (source, destination, or both).
+            </summary>
+            <param name="sourcePort">Source port.</param>
+            <param name="destPort">Destination port.</param>
+            <returns>Array of TCP connections.</returns>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.MemoryFreeMegabytes">
+            <summary>
+            Memory free in Megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskReadOperations">
+            <summary>
+            Total disk read operations.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskWriteOperations">
+            <summary>
+            Total disk write operations.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskReadQueue">
+            <summary>
+            Total disk read queue.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskWriteQueue">
+            <summary>
+            Total disk write queue.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskFreePercent">
+            <summary>
+            Total disk free percent.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskFreeMegabytes">
+            <summary>
+            Total disk free megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskSizeMegabytes">
+            <summary>
+            Total disk size megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskUsedMegabytes">
+            <summary>
+            Total disk used megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.ActiveTcpConnections">
+            <summary>
+            Active TCP connections.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.ToString">
+            <summary>
+            Produce a human-readable object.
+            </summary>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
