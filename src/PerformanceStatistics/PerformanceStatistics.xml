@@ -143,5 +143,13 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.GetActiveTcpConnections(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Retrieve active TCP connections by port (source, destination, or both).
+            </summary>
+            <param name="sourcePort">Source port.</param>
+            <param name="destPort">Destination port.</param>
+            <returns>Array of TCP connections.</returns>
+        </member>
     </members>
 </doc>

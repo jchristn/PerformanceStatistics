@@ -82,28 +82,8 @@ namespace PerformanceStatistics
         /// <param name="sourcePort">Source port.</param>
         /// <param name="destPort">Destination port.</param>
         /// <returns>Array of TCP connections.</returns>
-        public TcpConnectionInformation[] GetActiveTcpConnections(int? sourcePort = null, int? destPort = null)
-        {
-            if (sourcePort == null && destPort == null) return ActiveTcpConnections;
-
-            if (sourcePort != null && destPort == null)
-            {
-                return ActiveTcpConnections.Where(c =>
-                    c.LocalEndPoint.Port == sourcePort.Value).ToArray();
-            }
-            else if (sourcePort == null && destPort != null)
-            {
-                return ActiveTcpConnections.Where(c =>
-                    c.RemoteEndPoint.Port == destPort.Value).ToArray();
-            }
-            else
-            {
-                return ActiveTcpConnections.Where(c =>
-                    c.LocalEndPoint.Port == sourcePort.Value
-                    && c.RemoteEndPoint.Port == destPort.Value).ToArray();
-            }
-        }
-
+        public abstract TcpConnectionInformation[] GetActiveTcpConnections(int? sourcePort = null, int? destPort = null);
+        
         #endregion
 
         #region Private-Methods

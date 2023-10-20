@@ -119,7 +119,7 @@ namespace PerformanceStatistics
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Convert.ToDouble(string.Format("{0:N2}", ((TotalDiskFreeMegabytes / TotalDiskFreePercent) * 100))); 
+                return Convert.ToDouble(string.Format("{0:N2}", ((TotalDiskFreeMegabytes / TotalDiskFreePercent) * 100)));
             }
         }
 
@@ -178,7 +178,7 @@ namespace PerformanceStatistics
             StringBuilder sb = new StringBuilder();
             sb.Append("Windows Performance Statistics" + Environment.NewLine);
             sb.Append("------------------------------" + Environment.NewLine);
-            sb.Append("  CPU Utilization Percent         : " + CpuUtilizationPercent +"%" + Environment.NewLine);
+            sb.Append("  CPU Utilization Percent         : " + CpuUtilizationPercent + "%" + Environment.NewLine);
             sb.Append("  Memory Free (Megabytes)         : " + MemoryFreeMegabytes + "MB" + Environment.NewLine);
             sb.Append("  Total Disk Read Operations      : " + TotalDiskReadOperations + Environment.NewLine);
             sb.Append("  Total Disk Write Operations     : " + TotalDiskWriteOperations + Environment.NewLine);
@@ -195,17 +195,48 @@ namespace PerformanceStatistics
                 for (int i = 0; i < ActiveTcpConnections.Length; i++)
                 {
                     sb.Append(
-                        "  | " + 
-                        ActiveTcpConnections[i].LocalEndPoint.ToString() + 
-                        " to " + 
-                        ActiveTcpConnections[i].RemoteEndPoint.ToString() + 
-                        ": " + 
-                        ActiveTcpConnections[i].State.ToString() + 
+                        "  | " +
+                        ActiveTcpConnections[i].LocalEndPoint.ToString() +
+                        " to " +
+                        ActiveTcpConnections[i].RemoteEndPoint.ToString() +
+                        ": " +
+                        ActiveTcpConnections[i].State.ToString() +
                         Environment.NewLine);
                 }
             }
 
             return sb.ToString();
+        }
+        /// <summary>
+        /// Retrieve active TCP connections by port (source, destination, or both).
+        /// </summary>
+        /// <param name="sourcePort">Source port.</param>
+        /// <param name="destPort">Destination port.</param>
+        /// <returns>Array of TCP connections.</returns>
+        public override TcpConnectionInformation[] GetActiveTcpConnections(int? sourcePort = null, int? destPort = null)
+        {
+            if (sourcePort != null && destPort != null)
+            {
+                return ActiveTcpConnections.Where(c =>
+                    c.LocalEndPoint.Port == sourcePort.Value
+                    && c.RemoteEndPoint.Port == destPort.Value).ToArray();
+            }
+            else if (sourcePort != null && destPort == null)
+            {
+                return ActiveTcpConnections.Where(c =>
+                    c.LocalEndPoint.Port == sourcePort.Value).ToArray();
+            }
+            else if (sourcePort == null && destPort != null)
+            {
+                return ActiveTcpConnections.Where(c =>
+                    c.RemoteEndPoint.Port == destPort.Value).ToArray();
+            }
+            else if (sourcePort == null && destPort == null)
+            {
+                // do nothing
+            }
+
+            return ActiveTcpConnections;
         }
 
         #endregion

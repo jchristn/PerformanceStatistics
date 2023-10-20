@@ -30,6 +30,9 @@ namespace Test
                     case "stats":
                         DisplayStats();
                         break;
+                    case "port":
+                        CountByPort();
+                        break;
                 }
             }
         }
@@ -42,6 +45,7 @@ namespace Test
             Console.WriteLine("   ?               Help, this menu");
             Console.WriteLine("   cls             Clear the screen");
             Console.WriteLine("   stats           Gather current statistics");
+            Console.WriteLine("   port            Get connection count by port");
             Console.WriteLine("");
         }
 
@@ -61,6 +65,20 @@ namespace Test
                 Console.WriteLine("Unsupported platform");
                 Console.WriteLine("");
             }
+        }
+
+        private static void CountByPort()
+        {
+            string srcPortStr = Inputty.GetString("Source port :", null, true);
+            string dstPortStr = Inputty.GetString("Dest port   :", null, true);
+
+            int? srcPort = null;
+            int? dstPort = null;
+            if (!String.IsNullOrEmpty(srcPortStr)) srcPort = Convert.ToInt32(srcPortStr);
+            if (!String.IsNullOrEmpty(dstPortStr)) dstPort = Convert.ToInt32(dstPortStr);
+
+            WindowsPerformanceStatistics stats = new WindowsPerformanceStatistics();
+            Console.WriteLine(stats.GetActiveTcpConnections(srcPort, dstPort).Length + " connections");
         }
     }
 }
