@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
-using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace PerformanceStatistics
 {
@@ -14,54 +16,30 @@ namespace PerformanceStatistics
         #region Public-Members
 
         /// <summary>
-        /// CPU utilization percentage.
+        /// OS platform.
         /// </summary>
-        public double CpuUtilizationPercent;
+        public OSPlatform Platform { get; set; } = OSPlatform.Windows;
 
         /// <summary>
-        /// Memory free in Megabytes.
+        /// Statistics for the system.
         /// </summary>
-        public double MemoryFreeMegabytes;
+        public ISystemCounters System { get; set; }
 
         /// <summary>
-        /// Total disk read operations.
+        /// Statistics for monitored processes.
         /// </summary>
-        public int TotalDiskReadOperations;
-
-        /// <summary>
-        /// Total disk write operations.
-        /// </summary>
-        public int TotalDiskWriteOperations;
-
-        /// <summary>
-        /// Total disk read queue.
-        /// </summary>
-        public int TotalDiskReadQueue;
-
-        /// <summary>
-        /// Total disk write queue.
-        /// </summary>
-        public int TotalDiskWriteQueue;
-
-        /// <summary>
-        /// Total disk free percent.
-        /// </summary>
-        public double TotalDiskFreePercent;
-
-        /// <summary>
-        /// Total disk free megabytes.
-        /// </summary>
-        public double TotalDiskFreeMegabytes;
-
-        /// <summary>
-        /// Total disk size megabytes.
-        /// </summary>
-        public double TotalDiskSizeMegabytes;
-
-        /// <summary>
-        /// Total disk used megabytes.
-        /// </summary>
-        public double TotalDiskUsedMegabytes;
+        public Dictionary<string, List<ISystemCounters>> MonitoredProcesses
+        {
+            get
+            {
+                return _MonitoredProcesses;
+            }
+            set
+            {
+                if (value == null) _MonitoredProcesses = new Dictionary<string, List<ISystemCounters>>();
+                else _MonitoredProcesses = value;
+            }
+        }
 
         /// <summary>
         /// Active TCP connections.
@@ -71,6 +49,8 @@ namespace PerformanceStatistics
         #endregion
 
         #region Private-Members
+
+        private Dictionary<string, List<ISystemCounters>> _MonitoredProcesses = new Dictionary<string, List<ISystemCounters>>();
 
         #endregion
 

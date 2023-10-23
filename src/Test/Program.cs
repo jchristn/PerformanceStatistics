@@ -9,6 +9,7 @@ namespace Test
     public static class Program
     {
         private static bool _RunForever = true;
+        private static WindowsPerformanceStatistics _Statistics = new WindowsPerformanceStatistics();
 
         public static void Main(string[] args)
         {
@@ -33,6 +34,12 @@ namespace Test
                     case "port":
                         CountByPort();
                         break;
+                    case "add":
+                        AddProcess();
+                        break;
+                    case "del":
+                        RemoveProcess();
+                        break;
                 }
             }
         }
@@ -46,17 +53,17 @@ namespace Test
             Console.WriteLine("   cls             Clear the screen");
             Console.WriteLine("   stats           Gather current statistics");
             Console.WriteLine("   port            Get connection count by port");
+            Console.WriteLine("   add             Add monitored process by name");
+            Console.WriteLine("   del             Delete monitored process by name");
             Console.WriteLine("");
         }
 
         private static void DisplayStats()
         {
-            WindowsPerformanceStatistics stats = new WindowsPerformanceStatistics();
-            
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Console.WriteLine("");
-                Console.WriteLine(stats.ToString());
+                Console.WriteLine(_Statistics.ToString());
                 Console.WriteLine("");
             }
             else
@@ -77,8 +84,24 @@ namespace Test
             if (!String.IsNullOrEmpty(srcPortStr)) srcPort = Convert.ToInt32(srcPortStr);
             if (!String.IsNullOrEmpty(dstPortStr)) dstPort = Convert.ToInt32(dstPortStr);
 
-            WindowsPerformanceStatistics stats = new WindowsPerformanceStatistics();
-            Console.WriteLine(stats.GetActiveTcpConnections(srcPort, dstPort).Length + " connections");
+            Console.WriteLine(_Statistics.GetActiveTcpConnections(srcPort, dstPort).Length + " connections");
+        }
+
+        private static void AddProcess()
+        {
+            string name = Inputty.GetString("Name:", null, true);
+            if (String.IsNullOrEmpty(name)) return;
+
+            _Statistics.MonitoredProcessNames.Add(name);
+        }
+
+        private static void RemoveProcess()
+        {
+            string name = Inputty.GetString("Name:", null, true);
+            if (String.IsNullOrEmpty(name)) return;
+
+            if (_Statistics.MonitoredProcessNames.Contains(name))
+                _Statistics.MonitoredProcessNames.Remove(name);
         }
     }
 }

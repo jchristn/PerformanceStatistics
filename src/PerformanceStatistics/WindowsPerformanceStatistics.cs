@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
-using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace PerformanceStatistics
 {
@@ -16,122 +17,65 @@ namespace PerformanceStatistics
         #region Public-Members
 
         /// <summary>
-        /// CPU utilization percentage.
+        /// OS platform.
         /// </summary>
-        public new double CpuUtilizationPercent
-        {
+        public new OSPlatform Platform { get; } = OSPlatform.Windows;
+
+        /// <summary>
+        /// Statistics for the system.
+        /// </summary>
+        public new ISystemCounters System { get; } = new WindowsSystemCounters();
+
+        /// <summary>
+        /// Monitored process names.
+        /// </summary>
+        public List<string> MonitoredProcessNames
+        { 
             get
             {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Math.Round((new PerformanceCounter("Processor", "% Processor Time", "_Total")).NextValue(), 0);
+                return _MonitoredProcessNames;
+            }
+            set
+            {
+                if (value == null) _MonitoredProcessNames = new List<string>();
+                else _MonitoredProcessNames = value;
             }
         }
 
         /// <summary>
-        /// Memory free in Megabytes.
+        /// Statistics for monitored processes.
         /// </summary>
-        public new double MemoryFreeMegabytes
+        public new Dictionary<string, List<IProcessCounters>> MonitoredProcesses
         {
             get
             {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Math.Round((new PerformanceCounter("Memory", "Available MBytes")).NextValue(), 0);
-            }
-        }
+                Dictionary<string, List<IProcessCounters>> ret = new Dictionary<string, List<IProcessCounters>>();
 
-        /// <summary>
-        /// Total disk read operations.
-        /// </summary>
-        public new int TotalDiskReadOperations
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Disk Reads/sec", "_Total")).NextValue(), 0);
-            }
-        }
+                if (_MonitoredProcessNames != null && _MonitoredProcessNames.Count > 0)
+                {
+                    foreach (string processName in _MonitoredProcessNames)
+                    {
+                        Process[] processes = Process.GetProcessesByName(processName);
 
-        /// <summary>
-        /// Total disk write operations.
-        /// </summary>
-        public new int TotalDiskWriteOperations
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Disk Writes/sec", "_Total")).NextValue(), 0);
-            }
-        }
+                        if (processes == null || processes.Length == 0)
+                        {
+                            ret.Add(processName, new List<IProcessCounters>());
+                        }
+                        else
+                        {
+                            List<IProcessCounters> counters = new List<IProcessCounters>();
 
-        /// <summary>
-        /// Total disk read queue.
-        /// </summary>
-        public new int TotalDiskReadQueue
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Avg. Disk Read Queue Length", "_Total")).NextValue(), 0);
-            }
-        }
+                            foreach (Process process in processes)
+                            {
+                                counters.Add(new WindowsProcessCounters(process));
+                            }
 
-        /// <summary>
-        /// Total disk write queue.
-        /// </summary>
-        public new int TotalDiskWriteQueue
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Avg. Disk Write Queue Length", "_Total")).NextValue(), 0);
-            }
-        }
+                            ret.Add(processName, counters);
+                        }
+                    }
+                }
 
-        /// <summary>
-        /// Total disk free percent.
-        /// </summary>
-        public new double TotalDiskFreePercent
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Math.Round((new PerformanceCounter("LogicalDisk", "% Free Space", "_Total")).NextValue(), 0);
-            }
-        }
-
-        /// <summary>
-        /// Total disk free megabytes.
-        /// </summary>
-        public new double TotalDiskFreeMegabytes
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Math.Round((new PerformanceCounter("LogicalDisk", "Free Megabytes", "_Total")).NextValue(), 0);
-            }
-        }
-
-        /// <summary>
-        /// Total disk size megabytes.
-        /// </summary>
-        public new double TotalDiskSizeMegabytes
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Convert.ToDouble(string.Format("{0:N2}", ((TotalDiskFreeMegabytes / TotalDiskFreePercent) * 100)));
-            }
-        }
-
-        /// <summary>
-        /// Total disk used megabytes.
-        /// </summary>
-        public new double TotalDiskUsedMegabytes
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Convert.ToDouble(string.Format("{0:N2}", (TotalDiskSizeMegabytes - TotalDiskFreeMegabytes)));
+                return ret;
             }
         }
 
@@ -153,6 +97,8 @@ namespace PerformanceStatistics
 
         #region Private-Members
 
+        private List<string> _MonitoredProcessNames = new List<string>();
+
         #endregion
 
         #region Constructors-and-Factories
@@ -160,7 +106,7 @@ namespace PerformanceStatistics
         /// <summary>
         /// Instantiate.
         /// </summary>
-        public WindowsPerformanceStatistics()
+        public WindowsPerformanceStatistics(List<string> monitoredProcesses = null)
         {
 
         }
@@ -176,19 +122,33 @@ namespace PerformanceStatistics
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("Windows Performance Statistics" + Environment.NewLine);
-            sb.Append("------------------------------" + Environment.NewLine);
-            sb.Append("  CPU Utilization Percent         : " + CpuUtilizationPercent + "%" + Environment.NewLine);
-            sb.Append("  Memory Free (Megabytes)         : " + MemoryFreeMegabytes + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Read Operations      : " + TotalDiskReadOperations + Environment.NewLine);
-            sb.Append("  Total Disk Write Operations     : " + TotalDiskWriteOperations + Environment.NewLine);
-            sb.Append("  Total Disk Read Queue           : " + TotalDiskReadQueue + Environment.NewLine);
-            sb.Append("  Total Disk Write Queue          : " + TotalDiskWriteQueue + Environment.NewLine);
-            sb.Append("  Total Disk Free Percent         : " + TotalDiskFreePercent + "%" + Environment.NewLine);
-            sb.Append("  Total Disk Free Megabytes       : " + TotalDiskFreeMegabytes + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Size Megabytes       : " + TotalDiskSizeMegabytes + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Used Megabytes       : " + TotalDiskUsedMegabytes + "MB" + Environment.NewLine);
-            sb.Append("  Active TCP Connections          : " + ActiveTcpConnections.Length + Environment.NewLine);
+            sb.Append("--------------------------------------------------" + Environment.NewLine);
+            sb.Append("Operating System                : " + Platform.ToString() + Environment.NewLine);
+            sb.Append("System Counters                 : " + Environment.NewLine);
+            sb.Append(System.ToString());
+            sb.Append("Monitored Processes             : " + MonitoredProcesses.Count + Environment.NewLine);
+
+            if (MonitoredProcesses.Count > 0)
+            {
+                foreach (KeyValuePair<string, List<IProcessCounters>> entry in MonitoredProcesses)
+                {
+                    sb.Append("  " + entry.Key + Environment.NewLine);
+
+                    if (entry.Value != null && entry.Value.Count > 0)
+                    {
+                        foreach (IProcessCounters stats in entry.Value)
+                        {
+                            sb.Append(stats.ToString() + "---" + Environment.NewLine);
+                        }
+                    } 
+                    else
+                    {
+                        sb.Append("  (no data)" + Environment.NewLine);
+                    }
+                }
+            }
+
+            sb.Append("Active TCP Connections          : " + ActiveTcpConnections.Length + Environment.NewLine);
 
             if (ActiveTcpConnections.Length > 0)
             {
@@ -207,6 +167,7 @@ namespace PerformanceStatistics
 
             return sb.ToString();
         }
+
         /// <summary>
         /// Retrieve active TCP connections by port (source, destination, or both).
         /// </summary>

@@ -9,54 +9,19 @@
             Base class for performance statistics.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.CpuUtilizationPercent">
+        <member name="P:PerformanceStatistics.IPerformanceStatistics.Platform">
             <summary>
-            CPU utilization percentage.
+            OS platform.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.MemoryFreeMegabytes">
+        <member name="P:PerformanceStatistics.IPerformanceStatistics.System">
             <summary>
-            Memory free in Megabytes.
+            Statistics for the system.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskReadOperations">
+        <member name="P:PerformanceStatistics.IPerformanceStatistics.MonitoredProcesses">
             <summary>
-            Total disk read operations.
-            </summary>
-        </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskWriteOperations">
-            <summary>
-            Total disk write operations.
-            </summary>
-        </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskReadQueue">
-            <summary>
-            Total disk read queue.
-            </summary>
-        </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskWriteQueue">
-            <summary>
-            Total disk write queue.
-            </summary>
-        </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskFreePercent">
-            <summary>
-            Total disk free percent.
-            </summary>
-        </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskFreeMegabytes">
-            <summary>
-            Total disk free megabytes.
-            </summary>
-        </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskSizeMegabytes">
-            <summary>
-            Total disk size megabytes.
-            </summary>
-        </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.TotalDiskUsedMegabytes">
-            <summary>
-            Total disk used megabytes.
+            Statistics for monitored processes.
             </summary>
         </member>
         <member name="F:PerformanceStatistics.IPerformanceStatistics.ActiveTcpConnections">
@@ -72,59 +37,164 @@
             <param name="destPort">Destination port.</param>
             <returns>Array of TCP connections.</returns>
         </member>
+        <member name="T:PerformanceStatistics.IProcessCounters">
+            <summary>
+            Base class for process counters
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.ProcessId">
+            <summary>
+            Process ID.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.ProcessName">
+            <summary>
+            Process name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.ProcessTitle">
+            <summary>
+            Process title.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.MachineName">
+            <summary>
+            Machine name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.HandleCount">
+            <summary>
+            Handle count.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.ThreadCount">
+            <summary>
+            Thread count.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.NonPagedSystemMemory">
+            <summary>
+            Non-paged system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.PagedSystemMemory">
+            <summary>
+            Paged system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.PrivateMemory">
+            <summary>
+            Private memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.VirtualMemory">
+            <summary>
+            Virtual memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.WorkingSetMemory">
+            <summary>
+            Working set memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.PeakPagedSystemMemory">
+            <summary>
+            Peak paged system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.PeakVirtualSystemMemory">
+            <summary>
+            Peak virtual system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.PeakWorkingSetMemory">
+            <summary>
+            Peak working set memory.
+            </summary>
+        </member>
+        <member name="T:PerformanceStatistics.ISystemCounters">
+            <summary>
+            Base class for system counters.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.ISystemCounters.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.ISystemCounters.MemoryFreeMegabytes">
+            <summary>
+            Memory free in Megabytes.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskReadOperations">
+            <summary>
+            Total disk read operations.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskWriteOperations">
+            <summary>
+            Total disk write operations.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskReadQueue">
+            <summary>
+            Total disk read queue.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskWriteQueue">
+            <summary>
+            Total disk write queue.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskFreePercent">
+            <summary>
+            Total disk free percent.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskFreeMegabytes">
+            <summary>
+            Total disk free megabytes.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskSizeMegabytes">
+            <summary>
+            Total disk size megabytes.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskUsedMegabytes">
+            <summary>
+            Total disk used megabytes.
+            </summary>
+        </member>
         <member name="T:PerformanceStatistics.WindowsPerformanceStatistics">
             <summary>
             Windows performance statistics.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.CpuUtilizationPercent">
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.Platform">
             <summary>
-            CPU utilization percentage.
+            OS platform.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.MemoryFreeMegabytes">
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.System">
             <summary>
-            Memory free in Megabytes.
+            Statistics for the system.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskReadOperations">
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.MonitoredProcessNames">
             <summary>
-            Total disk read operations.
+            Monitored process names.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskWriteOperations">
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.MonitoredProcesses">
             <summary>
-            Total disk write operations.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskReadQueue">
-            <summary>
-            Total disk read queue.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskWriteQueue">
-            <summary>
-            Total disk write queue.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskFreePercent">
-            <summary>
-            Total disk free percent.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskFreeMegabytes">
-            <summary>
-            Total disk free megabytes.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskSizeMegabytes">
-            <summary>
-            Total disk size megabytes.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.TotalDiskUsedMegabytes">
-            <summary>
-            Total disk used megabytes.
+            Statistics for monitored processes.
             </summary>
         </member>
         <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.ActiveTcpConnections">
@@ -132,7 +202,7 @@
             Active TCP connections.
             </summary>
         </member>
-        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.#ctor">
+        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.#ctor(System.Collections.Generic.List{System.String})">
             <summary>
             Instantiate.
             </summary>
@@ -150,6 +220,163 @@
             <param name="sourcePort">Source port.</param>
             <param name="destPort">Destination port.</param>
             <returns>Array of TCP connections.</returns>
+        </member>
+        <member name="T:PerformanceStatistics.WindowsProcessCounters">
+            <summary>
+            Windows process counters.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.ProcessId">
+            <summary>
+            Process ID.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.ProcessName">
+            <summary>
+            Process name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.ProcessTitle">
+            <summary>
+            Process title.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.MachineName">
+            <summary>
+            Machine name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.HandleCount">
+            <summary>
+            Handle count.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.ThreadCount">
+            <summary>
+            Thread count.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.NonPagedSystemMemory">
+            <summary>
+            Non-paged system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.PagedSystemMemory">
+            <summary>
+            Paged system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.PrivateMemory">
+            <summary>
+            Private memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.VirtualMemory">
+            <summary>
+            Virtual memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.WorkingSetMemory">
+            <summary>
+            Working set memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.PeakPagedSystemMemory">
+            <summary>
+            Peak paged system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.PeakVirtualSystemMemory">
+            <summary>
+            Peak virtual system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCounters.PeakWorkingSetMemory">
+            <summary>
+            Peak working set memory.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsProcessCounters.#ctor(System.Diagnostics.Process)">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsProcessCounters.ToString">
+            <summary>
+            Produce a human-readable object.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:PerformanceStatistics.WindowsSystemCounters">
+            <summary>
+            Windows system counters.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCounters.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCounters.MemoryFreeMegabytes">
+            <summary>
+            Memory free in Megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskReadOperations">
+            <summary>
+            Total disk read operations.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskWriteOperations">
+            <summary>
+            Total disk write operations.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskReadQueue">
+            <summary>
+            Total disk read queue.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskWriteQueue">
+            <summary>
+            Total disk write queue.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskFreePercent">
+            <summary>
+            Total disk free percent.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskFreeMegabytes">
+            <summary>
+            Total disk free megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskSizeMegabytes">
+            <summary>
+            Total disk size megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskUsedMegabytes">
+            <summary>
+            Total disk used megabytes.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsSystemCounters.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsSystemCounters.ToString">
+            <summary>
+            Produce a human-readable object.
+            </summary>
+            <returns></returns>
         </member>
     </members>
 </doc>

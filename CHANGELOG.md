@@ -2,10 +2,12 @@
 
 ## Current Version
 
-v1.0.x
+v1.1.x
 
-- Initial release, supporting only Windows
+- Added monitored processes
 
 ## Previous Versions
 
-Notes from previous versions will be shown here.
+v1.0.x
+
+- Initial release, supporting only Windows
