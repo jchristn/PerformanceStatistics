@@ -9,11 +9,6 @@
             Base class for performance statistics.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.IPerformanceStatistics.Platform">
-            <summary>
-            OS platform.
-            </summary>
-        </member>
         <member name="P:PerformanceStatistics.IPerformanceStatistics.System">
             <summary>
             Statistics for the system.
@@ -175,11 +170,6 @@
         <member name="T:PerformanceStatistics.WindowsPerformanceStatistics">
             <summary>
             Windows performance statistics.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.Platform">
-            <summary>
-            OS platform.
             </summary>
         </member>
         <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.System">

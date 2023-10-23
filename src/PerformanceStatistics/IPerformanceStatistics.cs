@@ -16,11 +16,6 @@ namespace PerformanceStatistics
         #region Public-Members
 
         /// <summary>
-        /// OS platform.
-        /// </summary>
-        public OSPlatform Platform { get; set; } = OSPlatform.Windows;
-
-        /// <summary>
         /// Statistics for the system.
         /// </summary>
         public ISystemCounters System { get; set; }

@@ -65,6 +65,8 @@ namespace Test
                 Console.WriteLine("");
                 Console.WriteLine(_Statistics.ToString());
                 Console.WriteLine("");
+
+                Console.WriteLine("");
             }
             else
             {

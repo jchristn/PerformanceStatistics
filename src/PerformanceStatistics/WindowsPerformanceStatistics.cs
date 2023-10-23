@@ -17,14 +17,9 @@ namespace PerformanceStatistics
         #region Public-Members
 
         /// <summary>
-        /// OS platform.
-        /// </summary>
-        public new OSPlatform Platform { get; set; } = OSPlatform.Windows;
-
-        /// <summary>
         /// Statistics for the system.
         /// </summary>
-        public new ISystemCounters System { get; set; } = new WindowsSystemCounters();
+        public new WindowsSystemCounters System { get; set; } = new WindowsSystemCounters();
 
         /// <summary>
         /// Monitored process names.
@@ -45,11 +40,11 @@ namespace PerformanceStatistics
         /// <summary>
         /// Statistics for monitored processes.
         /// </summary>
-        public new Dictionary<string, List<IProcessCounters>> MonitoredProcesses
+        public new Dictionary<string, List<WindowsProcessCounters>> MonitoredProcesses
         {
             get
             {
-                Dictionary<string, List<IProcessCounters>> ret = new Dictionary<string, List<IProcessCounters>>();
+                Dictionary<string, List<WindowsProcessCounters>> ret = new Dictionary<string, List<WindowsProcessCounters>>();
 
                 if (_MonitoredProcessNames != null && _MonitoredProcessNames.Count > 0)
                 {
@@ -59,11 +54,11 @@ namespace PerformanceStatistics
 
                         if (processes == null || processes.Length == 0)
                         {
-                            ret.Add(processName, new List<IProcessCounters>());
+                            ret.Add(processName, new List<WindowsProcessCounters>());
                         }
                         else
                         {
-                            List<IProcessCounters> counters = new List<IProcessCounters>();
+                            List<WindowsProcessCounters> counters = new List<WindowsProcessCounters>();
 
                             foreach (Process process in processes)
                             {
@@ -132,14 +127,13 @@ namespace PerformanceStatistics
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("--------------------------------------------------" + Environment.NewLine);
-            sb.Append("Operating System                : " + Platform.ToString() + Environment.NewLine);
             sb.Append("System Counters                 : " + Environment.NewLine);
             sb.Append(System.ToString());
             sb.Append("Monitored Processes             : " + MonitoredProcesses.Count + Environment.NewLine);
 
             if (MonitoredProcesses.Count > 0)
             {
-                foreach (KeyValuePair<string, List<IProcessCounters>> entry in MonitoredProcesses)
+                foreach (KeyValuePair<string, List<WindowsProcessCounters>> entry in MonitoredProcesses)
                 {
                     sb.Append("  " + entry.Key + Environment.NewLine);
 
