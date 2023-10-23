@@ -106,9 +106,10 @@ namespace PerformanceStatistics
         /// <summary>
         /// Instantiate.
         /// </summary>
+        /// <param name="monitoredProcesses">Monitored process names.</param>
         public WindowsPerformanceStatistics(List<string> monitoredProcesses = null)
         {
-
+            if (monitoredProcesses != null) _MonitoredProcessNames = monitoredProcesses;
         }
 
         #endregion

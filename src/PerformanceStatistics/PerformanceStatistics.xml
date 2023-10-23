@@ -206,6 +206,7 @@
             <summary>
             Instantiate.
             </summary>
+            <param name="monitoredProcesses">Monitored process names.</param>
         </member>
         <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.ToString">
             <summary>
