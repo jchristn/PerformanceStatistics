@@ -44,7 +44,7 @@ namespace PerformanceStatistics
         /// <summary>
         /// Active TCP connections.
         /// </summary>
-        public TcpConnectionInformation[] ActiveTcpConnections;
+        public TcpConnectionInformation[] ActiveTcpConnections { get; set; }
 
         #endregion
 

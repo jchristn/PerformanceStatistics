@@ -24,6 +24,10 @@ namespace PerformanceStatistics
             {
                 return _Process.Id;
             }
+            set
+            {
+
+            }
         }
 
         /// <summary>
@@ -34,6 +38,10 @@ namespace PerformanceStatistics
             get
             {
                 return _Process.ProcessName;
+            }
+            set
+            {
+
             }
         }
 
@@ -46,6 +54,10 @@ namespace PerformanceStatistics
             {
                 return _Process.MainWindowTitle;
             }
+            set
+            {
+
+            }
         }
 
         /// <summary>
@@ -56,6 +68,10 @@ namespace PerformanceStatistics
             get
             {
                 return _Process.MachineName;
+            }
+            set
+            {
+
             }
         }
 
@@ -75,6 +91,10 @@ namespace PerformanceStatistics
                 double d = pc.NextValue();
                 return d;
             }
+            set
+            {
+
+            }
         }
 
         /// <summary>
@@ -85,6 +105,10 @@ namespace PerformanceStatistics
             get
             {
                 return _Process.HandleCount;
+            }
+            set
+            {
+
             }
         }
 
@@ -98,6 +122,10 @@ namespace PerformanceStatistics
                 if (_Process.Threads != null) return _Process.Threads.Count;
                 return 0;
             }
+            set
+            {
+
+            }
         }
 
         /// <summary>
@@ -108,6 +136,10 @@ namespace PerformanceStatistics
             get
             {
                 return _Process.NonpagedSystemMemorySize64;
+            }
+            set
+            {
+
             }
         }
 
@@ -120,6 +152,10 @@ namespace PerformanceStatistics
             {
                 return _Process.PagedSystemMemorySize64;
             }
+            set
+            {
+
+            }
         }
 
         /// <summary>
@@ -130,6 +166,10 @@ namespace PerformanceStatistics
             get
             {
                 return _Process.PrivateMemorySize64;
+            }
+            set
+            {
+
             }
         }
 
@@ -142,6 +182,10 @@ namespace PerformanceStatistics
             {
                 return _Process.VirtualMemorySize64;
             }
+            set
+            {
+
+            }
         }
 
         /// <summary>
@@ -152,6 +196,10 @@ namespace PerformanceStatistics
             get
             {
                 return _Process.WorkingSet64;
+            }
+            set
+            {
+
             }
         }
 
@@ -164,6 +212,10 @@ namespace PerformanceStatistics
             {
                 return _Process.PeakPagedMemorySize64;
             }
+            set
+            {
+
+            }
         }
 
         /// <summary>
@@ -175,6 +227,10 @@ namespace PerformanceStatistics
             {
                 return _Process.PeakVirtualMemorySize64;
             }
+            set
+            {
+
+            }
         }
 
         /// <summary>
@@ -185,6 +241,10 @@ namespace PerformanceStatistics
             get
             {
                 return _Process.PeakWorkingSet64;
+            }
+            set
+            {
+
             }
         }
 

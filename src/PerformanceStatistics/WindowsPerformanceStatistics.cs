@@ -19,12 +19,12 @@ namespace PerformanceStatistics
         /// <summary>
         /// OS platform.
         /// </summary>
-        public new OSPlatform Platform { get; } = OSPlatform.Windows;
+        public new OSPlatform Platform { get; set; } = OSPlatform.Windows;
 
         /// <summary>
         /// Statistics for the system.
         /// </summary>
-        public new ISystemCounters System { get; } = new WindowsSystemCounters();
+        public new ISystemCounters System { get; set; } = new WindowsSystemCounters();
 
         /// <summary>
         /// Monitored process names.
@@ -77,6 +77,10 @@ namespace PerformanceStatistics
 
                 return ret;
             }
+            set
+            {
+
+            }
         }
 
         /// <summary>
@@ -90,6 +94,10 @@ namespace PerformanceStatistics
                 TcpConnectionInformation[] ret = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
                 if (ret == null) return new TcpConnectionInformation[0];
                 return ret;
+            }
+            set
+            {
+
             }
         }
 

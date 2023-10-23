@@ -24,7 +24,7 @@
             Statistics for monitored processes.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.IPerformanceStatistics.ActiveTcpConnections">
+        <member name="P:PerformanceStatistics.IPerformanceStatistics.ActiveTcpConnections">
             <summary>
             Active TCP connections.
             </summary>
@@ -122,52 +122,52 @@
             Base class for system counters.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.ISystemCounters.CpuUtilizationPercent">
+        <member name="P:PerformanceStatistics.ISystemCounters.CpuUtilizationPercent">
             <summary>
             CPU utilization percentage.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.ISystemCounters.MemoryFreeMegabytes">
+        <member name="P:PerformanceStatistics.ISystemCounters.MemoryFreeMegabytes">
             <summary>
             Memory free in Megabytes.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskReadOperations">
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskReadOperations">
             <summary>
             Total disk read operations.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskWriteOperations">
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskWriteOperations">
             <summary>
             Total disk write operations.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskReadQueue">
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskReadQueue">
             <summary>
             Total disk read queue.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskWriteQueue">
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskWriteQueue">
             <summary>
             Total disk write queue.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskFreePercent">
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskFreePercent">
             <summary>
             Total disk free percent.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskFreeMegabytes">
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskFreeMegabytes">
             <summary>
             Total disk free megabytes.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskSizeMegabytes">
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskSizeMegabytes">
             <summary>
             Total disk size megabytes.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.ISystemCounters.TotalDiskUsedMegabytes">
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskUsedMegabytes">
             <summary>
             Total disk used megabytes.
             </summary>
