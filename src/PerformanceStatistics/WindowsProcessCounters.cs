@@ -11,74 +11,58 @@ namespace PerformanceStatistics
     /// <summary>
     /// Windows process counters.
     /// </summary>
-    public class WindowsProcessCounters : IProcessCounters
+    public class WindowsProcessCounters
     {
         #region Public-Members
 
         /// <summary>
         /// Process ID.
         /// </summary>
-        public new int? ProcessId
+        public int? ProcessId
         {
             get
             {
                 return _Process.Id;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Process name.
         /// </summary>
-        public new string ProcessName
+        public string ProcessName
         {
             get
             {
                 return _Process.ProcessName;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Process title.
         /// </summary>
-        public new string ProcessTitle
+        public string ProcessTitle
         {
             get
             {
                 return _Process.MainWindowTitle;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Machine name.
         /// </summary>
-        public new string MachineName
+        public string MachineName
         {
             get
             {
                 return _Process.MachineName;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// CPU utilization percentage.
         /// </summary>
-        public new double CpuUtilizationPercent
+        public double CpuUtilizationPercent
         {
             get
             {
@@ -91,160 +75,116 @@ namespace PerformanceStatistics
                 double d = pc.NextValue();
                 return d;
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Handle count.
         /// </summary>
-        public new int HandleCount
+        public int HandleCount
         {
             get
             {
                 return _Process.HandleCount;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Thread count.
         /// </summary>
-        public new int ThreadCount
+        public int ThreadCount
         {
             get
             {
                 if (_Process.Threads != null) return _Process.Threads.Count;
                 return 0;
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Non-paged system memory.
         /// </summary>
-        public new long NonPagedSystemMemory
+        public long NonPagedSystemMemory
         {
             get
             {
                 return _Process.NonpagedSystemMemorySize64;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Paged system memory.
         /// </summary>
-        public new long PagedSystemMemory
+        public long PagedSystemMemory
         {
             get
             {
                 return _Process.PagedSystemMemorySize64;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Private memory.
         /// </summary>
-        public new long PrivateMemory
+        public long PrivateMemory
         {
             get
             {
                 return _Process.PrivateMemorySize64;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Virtual memory.
         /// </summary>
-        public new long VirtualMemory
+        public long VirtualMemory
         {
             get
             {
                 return _Process.VirtualMemorySize64;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Working set memory.
         /// </summary>
-        public new long WorkingSetMemory
+        public long WorkingSetMemory
         {
             get
             {
                 return _Process.WorkingSet64;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Peak paged system memory.
         /// </summary>
-        public new long PeakPagedSystemMemory
+        public long PeakPagedSystemMemory
         {
             get
             {
                 return _Process.PeakPagedMemorySize64;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Peak virtual system memory.
         /// </summary>
-        public new long PeakVirtualSystemMemory
+        public long PeakVirtualSystemMemory
         {
             get
             {
                 return _Process.PeakVirtualMemorySize64;
-            }
-            set
-            {
-
             }
         }
 
         /// <summary>
         /// Peak working set memory.
         /// </summary>
-        public new long PeakWorkingSetMemory
+        public long PeakWorkingSetMemory
         {
             get
             {
                 return _Process.PeakWorkingSet64;
-            }
-            set
-            {
-
             }
         }
 

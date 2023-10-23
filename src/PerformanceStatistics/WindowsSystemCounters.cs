@@ -11,167 +11,127 @@ namespace PerformanceStatistics
     /// <summary>
     /// Windows system counters.
     /// </summary>
-    public class WindowsSystemCounters : ISystemCounters
+    public class WindowsSystemCounters
     {
         #region Public-Members
 
         /// <summary>
         /// CPU utilization percentage.
         /// </summary>
-        public new double CpuUtilizationPercent
+        public double CpuUtilizationPercent
         {
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
                 return Math.Round((new PerformanceCounter("Processor", "% Processor Time", "_Total")).NextValue(), 0);
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Memory free in Megabytes.
         /// </summary>
-        public new double MemoryFreeMegabytes
+        public double MemoryFreeMegabytes
         {
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
                 return Math.Round((new PerformanceCounter("Memory", "Available MBytes")).NextValue(), 0);
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Total disk read operations.
         /// </summary>
-        public new int TotalDiskReadOperations
+        public int TotalDiskReadOperations
         {
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
                 return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Disk Reads/sec", "_Total")).NextValue(), 0);
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Total disk write operations.
         /// </summary>
-        public new int TotalDiskWriteOperations
+        public int TotalDiskWriteOperations
         {
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
                 return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Disk Writes/sec", "_Total")).NextValue(), 0);
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Total disk read queue.
         /// </summary>
-        public new int TotalDiskReadQueue
+        public int TotalDiskReadQueue
         {
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
                 return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Avg. Disk Read Queue Length", "_Total")).NextValue(), 0);
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Total disk write queue.
         /// </summary>
-        public new int TotalDiskWriteQueue
+        public int TotalDiskWriteQueue
         {
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
                 return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Avg. Disk Write Queue Length", "_Total")).NextValue(), 0);
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Total disk free percent.
         /// </summary>
-        public new double TotalDiskFreePercent
+        public double TotalDiskFreePercent
         {
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
                 return Math.Round((new PerformanceCounter("LogicalDisk", "% Free Space", "_Total")).NextValue(), 0);
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Total disk free megabytes.
         /// </summary>
-        public new double TotalDiskFreeMegabytes
+        public double TotalDiskFreeMegabytes
         {
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
                 return Math.Round((new PerformanceCounter("LogicalDisk", "Free Megabytes", "_Total")).NextValue(), 0);
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Total disk size megabytes.
         /// </summary>
-        public new double TotalDiskSizeMegabytes
+        public double TotalDiskSizeMegabytes
         {
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
                 return Convert.ToDouble(string.Format("{0:N2}", ((TotalDiskFreeMegabytes / TotalDiskFreePercent) * 100)));
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Total disk used megabytes.
         /// </summary>
-        public new double TotalDiskUsedMegabytes
+        public double TotalDiskUsedMegabytes
         {
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
                 return Convert.ToDouble(string.Format("{0:N2}", (TotalDiskSizeMegabytes - TotalDiskFreeMegabytes)));
-            }
-            set
-            {
-
             }
         }
 

@@ -12,14 +12,14 @@ namespace PerformanceStatistics
     /// <summary>
     /// Windows performance statistics.
     /// </summary>
-    public class WindowsPerformanceStatistics : IPerformanceStatistics
+    public class WindowsPerformanceStatistics
     {
         #region Public-Members
 
         /// <summary>
         /// Statistics for the system.
         /// </summary>
-        public new WindowsSystemCounters System { get; set; } = new WindowsSystemCounters();
+        public WindowsSystemCounters System { get; } = new WindowsSystemCounters();
 
         /// <summary>
         /// Monitored process names.
@@ -40,7 +40,7 @@ namespace PerformanceStatistics
         /// <summary>
         /// Statistics for monitored processes.
         /// </summary>
-        public new Dictionary<string, List<WindowsProcessCounters>> MonitoredProcesses
+        public Dictionary<string, List<WindowsProcessCounters>> MonitoredProcesses
         {
             get
             {
@@ -72,16 +72,12 @@ namespace PerformanceStatistics
 
                 return ret;
             }
-            set
-            {
-
-            }
         }
 
         /// <summary>
         /// Active TCP connections.
         /// </summary>
-        public new TcpConnectionInformation[] ActiveTcpConnections
+        public TcpConnectionInformation[] ActiveTcpConnections
         {
             get
             {
@@ -89,10 +85,6 @@ namespace PerformanceStatistics
                 TcpConnectionInformation[] ret = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
                 if (ret == null) return new TcpConnectionInformation[0];
                 return ret;
-            }
-            set
-            {
-
             }
         }
 
@@ -139,7 +131,7 @@ namespace PerformanceStatistics
 
                     if (entry.Value != null && entry.Value.Count > 0)
                     {
-                        foreach (IProcessCounters stats in entry.Value)
+                        foreach (WindowsProcessCounters stats in entry.Value)
                         {
                             sb.Append(stats.ToString() + "---" + Environment.NewLine);
                         }
@@ -177,7 +169,7 @@ namespace PerformanceStatistics
         /// <param name="sourcePort">Source port.</param>
         /// <param name="destPort">Destination port.</param>
         /// <returns>Array of TCP connections.</returns>
-        public override TcpConnectionInformation[] GetActiveTcpConnections(int? sourcePort = null, int? destPort = null)
+        public TcpConnectionInformation[] GetActiveTcpConnections(int? sourcePort = null, int? destPort = null)
         {
             if (sourcePort != null && destPort != null)
             {

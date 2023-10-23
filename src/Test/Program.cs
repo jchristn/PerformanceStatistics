@@ -31,6 +31,9 @@ namespace Test
                     case "stats":
                         DisplayStats();
                         break;
+                    case "json":
+                        DisplayJson();
+                        break;
                     case "port":
                         CountByPort();
                         break;
@@ -52,6 +55,7 @@ namespace Test
             Console.WriteLine("   ?               Help, this menu");
             Console.WriteLine("   cls             Clear the screen");
             Console.WriteLine("   stats           Gather current statistics");
+            Console.WriteLine("   json            Gather current statistics in JSON");
             Console.WriteLine("   port            Get connection count by port");
             Console.WriteLine("   add             Add monitored process by name");
             Console.WriteLine("   del             Delete monitored process by name");
@@ -64,6 +68,24 @@ namespace Test
             {
                 Console.WriteLine("");
                 Console.WriteLine(_Statistics.ToString());
+                Console.WriteLine("");
+
+                Console.WriteLine("");
+            }
+            else
+            {
+                Console.WriteLine("");
+                Console.WriteLine("Unsupported platform");
+                Console.WriteLine("");
+            }
+        }
+
+        private static void DisplayJson()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Console.WriteLine("");
+                Console.WriteLine(SerializationHelper.SerializeJson(_Statistics, true));
                 Console.WriteLine("");
 
                 Console.WriteLine("");
