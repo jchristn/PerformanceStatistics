@@ -11,8 +11,9 @@ namespace PerformanceStatistics
     /// <summary>
     /// Windows process counters.
     /// </summary>
-    public class WindowsProcessCounters
+    public class WindowsProcessCounters : IDisposable
     {
+        private bool _Disposed = false;
         #region Public-Members
 
         /// <summary>
@@ -67,13 +68,15 @@ namespace PerformanceStatistics
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                PerformanceCounter pc = new PerformanceCounter();
-                pc.CategoryName = "Process";
-                pc.CounterName = "% Processor Time";
-                pc.InstanceName = _Process.ProcessName;
-                pc.NextValue();
-                double d = pc.NextValue();
-                return d;
+                using (var pc = new PerformanceCounter())
+                {
+                    pc.CategoryName = "Process";
+                    pc.CounterName = "% Processor Time";
+                    pc.InstanceName = _Process.ProcessName;
+                    pc.NextValue();
+                    double d = pc.NextValue();
+                    return Convert.ToDouble(string.Format("{0:N2}", d));
+                }
             }
         }
 
@@ -239,6 +242,36 @@ namespace PerformanceStatistics
         #endregion
 
         #region Private-Methods
+
+        #endregion
+
+        #region IDisposable
+
+        /// <summary>
+        /// Dispose of resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Dispose of resources.
+        /// </summary>
+        /// <param name="disposing">True if disposing.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_Disposed) return;
+
+            if (disposing)
+            {
+                _Process?.Dispose();
+                _Process = null;
+            }
+
+            _Disposed = true;
+        }
 
         #endregion
     }

@@ -23,7 +23,10 @@ namespace PerformanceStatistics
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Math.Round((new PerformanceCounter("Processor", "% Processor Time", "_Total")).NextValue(), 0);
+                using (var counter = new PerformanceCounter("Processor", "% Processor Time", "_Total"))
+                {
+                    return Math.Round(counter.NextValue(), 0);
+                }
             }
         }
 
@@ -35,7 +38,10 @@ namespace PerformanceStatistics
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Math.Round((new PerformanceCounter("Memory", "Available MBytes")).NextValue(), 0);
+                using (var counter = new PerformanceCounter("Memory", "Available MBytes"))
+                {
+                    return Math.Round(counter.NextValue(), 0);
+                }
             }
         }
 
@@ -47,7 +53,10 @@ namespace PerformanceStatistics
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Disk Reads/sec", "_Total")).NextValue(), 0);
+                using (var counter = new PerformanceCounter("LogicalDisk", "Disk Reads/sec", "_Total"))
+                {
+                    return (int)Math.Round(counter.NextValue(), 0);
+                }
             }
         }
 
@@ -59,7 +68,10 @@ namespace PerformanceStatistics
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Disk Writes/sec", "_Total")).NextValue(), 0);
+                using (var counter = new PerformanceCounter("LogicalDisk", "Disk Writes/sec", "_Total"))
+                {
+                    return (int)Math.Round(counter.NextValue(), 0);
+                }
             }
         }
 
@@ -71,7 +83,10 @@ namespace PerformanceStatistics
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Avg. Disk Read Queue Length", "_Total")).NextValue(), 0);
+                using (var counter = new PerformanceCounter("LogicalDisk", "Avg. Disk Read Queue Length", "_Total"))
+                {
+                    return (int)Math.Round(counter.NextValue(), 0);
+                }
             }
         }
 
@@ -83,7 +98,10 @@ namespace PerformanceStatistics
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return (int)Math.Round((new PerformanceCounter("LogicalDisk", "Avg. Disk Write Queue Length", "_Total")).NextValue(), 0);
+                using (var counter = new PerformanceCounter("LogicalDisk", "Avg. Disk Write Queue Length", "_Total"))
+                {
+                    return (int)Math.Round(counter.NextValue(), 0);
+                }
             }
         }
 
@@ -95,7 +113,10 @@ namespace PerformanceStatistics
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Math.Round((new PerformanceCounter("LogicalDisk", "% Free Space", "_Total")).NextValue(), 0);
+                using (var counter = new PerformanceCounter("LogicalDisk", "% Free Space", "_Total"))
+                {
+                    return Math.Round(counter.NextValue(), 0);
+                }
             }
         }
 
@@ -107,7 +128,10 @@ namespace PerformanceStatistics
             get
             {
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                return Math.Round((new PerformanceCounter("LogicalDisk", "Free Megabytes", "_Total")).NextValue(), 0);
+                using (var counter = new PerformanceCounter("LogicalDisk", "Free Megabytes", "_Total"))
+                {
+                    return Math.Round(counter.NextValue(), 0);
+                }
             }
         }
 

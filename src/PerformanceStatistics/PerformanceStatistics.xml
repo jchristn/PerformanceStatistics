@@ -22,6 +22,7 @@
         <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.MonitoredProcesses">
             <summary>
             Statistics for monitored processes.
+            Refreshes process data on each access; previous process handles are disposed.
             </summary>
         </member>
         <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.ActiveTcpConnections">
@@ -48,6 +49,17 @@
             <param name="sourcePort">Source port.</param>
             <param name="destPort">Destination port.</param>
             <returns>Array of TCP connections.</returns>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.Dispose(System.Boolean)">
+            <summary>
+            Dispose of resources.
+            </summary>
+            <param name="disposing">True if disposing.</param>
         </member>
         <member name="T:PerformanceStatistics.WindowsProcessCounters">
             <summary>
@@ -139,6 +151,17 @@
             Produce a human-readable object.
             </summary>
             <returns></returns>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsProcessCounters.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsProcessCounters.Dispose(System.Boolean)">
+            <summary>
+            Dispose of resources.
+            </summary>
+            <param name="disposing">True if disposing.</param>
         </member>
         <member name="T:PerformanceStatistics.WindowsSystemCounters">
             <summary>

@@ -12,8 +12,12 @@ namespace PerformanceStatistics
     /// <summary>
     /// Windows performance statistics.
     /// </summary>
-    public class WindowsPerformanceStatistics
+    public class WindowsPerformanceStatistics : IDisposable
     {
+        private bool _Disposed = false;
+        private readonly object _Lock = new object();
+        private Dictionary<string, List<WindowsProcessCounters>> _CachedMonitoredProcesses = null;
+
         #region Public-Members
 
         /// <summary>
@@ -39,38 +43,45 @@ namespace PerformanceStatistics
 
         /// <summary>
         /// Statistics for monitored processes.
+        /// Refreshes process data on each access; previous process handles are disposed.
         /// </summary>
         public Dictionary<string, List<WindowsProcessCounters>> MonitoredProcesses
         {
             get
             {
-                Dictionary<string, List<WindowsProcessCounters>> ret = new Dictionary<string, List<WindowsProcessCounters>>();
-
-                if (_MonitoredProcessNames != null && _MonitoredProcessNames.Count > 0)
+                lock (_Lock)
                 {
-                    foreach (string processName in _MonitoredProcessNames)
+                    // Dispose previous cached processes
+                    DisposeMonitoredProcesses();
+
+                    _CachedMonitoredProcesses = new Dictionary<string, List<WindowsProcessCounters>>();
+
+                    if (_MonitoredProcessNames != null && _MonitoredProcessNames.Count > 0)
                     {
-                        Process[] processes = Process.GetProcessesByName(processName);
-
-                        if (processes == null || processes.Length == 0)
+                        foreach (string processName in _MonitoredProcessNames)
                         {
-                            ret.Add(processName, new List<WindowsProcessCounters>());
-                        }
-                        else
-                        {
-                            List<WindowsProcessCounters> counters = new List<WindowsProcessCounters>();
+                            Process[] processes = Process.GetProcessesByName(processName);
 
-                            foreach (Process process in processes)
+                            if (processes == null || processes.Length == 0)
                             {
-                                counters.Add(new WindowsProcessCounters(process));
+                                _CachedMonitoredProcesses.Add(processName, new List<WindowsProcessCounters>());
                             }
+                            else
+                            {
+                                List<WindowsProcessCounters> counters = new List<WindowsProcessCounters>();
 
-                            ret.Add(processName, counters);
+                                foreach (Process process in processes)
+                                {
+                                    counters.Add(new WindowsProcessCounters(process));
+                                }
+
+                                _CachedMonitoredProcesses.Add(processName, counters);
+                            }
                         }
                     }
-                }
 
-                return ret;
+                    return _CachedMonitoredProcesses;
+                }
             }
         }
 
@@ -198,6 +209,56 @@ namespace PerformanceStatistics
         #endregion
 
         #region Private-Methods
+
+        private void DisposeMonitoredProcesses()
+        {
+            if (_CachedMonitoredProcesses != null)
+            {
+                foreach (var kvp in _CachedMonitoredProcesses)
+                {
+                    if (kvp.Value != null)
+                    {
+                        foreach (var counter in kvp.Value)
+                        {
+                            counter?.Dispose();
+                        }
+                    }
+                }
+                _CachedMonitoredProcesses = null;
+            }
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        /// <summary>
+        /// Dispose of resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Dispose of resources.
+        /// </summary>
+        /// <param name="disposing">True if disposing.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_Disposed) return;
+
+            if (disposing)
+            {
+                lock (_Lock)
+                {
+                    DisposeMonitoredProcesses();
+                }
+            }
+
+            _Disposed = true;
+        }
 
         #endregion
     }
