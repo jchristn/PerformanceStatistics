@@ -3,6 +3,7 @@ using System.Runtime;
 using System.Runtime.InteropServices;
 using GetSomeInput;
 using PerformanceStatistics;
+using PerformanceStatistics.Windows;
 
 namespace Test
 {

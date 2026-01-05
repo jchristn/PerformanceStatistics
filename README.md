@@ -2,12 +2,13 @@
 
 <img src="https://github.com/jchristn/PerformanceStatistics/blob/main/Assets/logo.png?raw=true" width="100" height="100" />
 
-A lightweight .NET library for capturing real-time performance statistics from Windows performance counters. Monitor system resources like CPU, memory, and disk usage, as well as detailed metrics for specific processes.
+A lightweight cross-platform .NET library for capturing real-time performance statistics. Monitor system resources like CPU, memory, and disk usage, as well as detailed metrics for specific processes on Windows, Linux, and macOS.
 
 [![NuGet Version](https://img.shields.io/nuget/v/PerformanceStatistics.svg?style=flat)](https://www.nuget.org/packages/PerformanceStatistics/) [![NuGet](https://img.shields.io/nuget/dt/PerformanceStatistics.svg)](https://www.nuget.org/packages/PerformanceStatistics)
 
 ## Why Use This Library?
 
+- **Cross-Platform**: Works on Windows, Linux, and macOS
 - **Simple API**: Get system and process performance metrics with just a few lines of code
 - **Real-time Monitoring**: Access live CPU, memory, disk, and network statistics
 - **Process Tracking**: Monitor specific processes by name with detailed metrics including memory usage, thread counts, and handle counts
@@ -16,102 +17,113 @@ A lightweight .NET library for capturing real-time performance statistics from W
 
 ## Platform Support
 
-**Windows Only** - This library uses Windows Performance Counters and is only supported on Windows operating systems.
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Windows | Full Support | All metrics available via Windows Performance Counters |
+| Linux | Full Support | Metrics from `/proc` filesystem |
+| macOS | Full Support | Metrics via system commands (`top`, `vm_stat`, `iostat`) |
 
 ## Help, Feedback, Contribute
 
 If you have any issues or feedback, please file an issue here in Github. We'd love to have you help by contributing code for new features, optimization to the existing codebase, ideas for future releases, or fixes!
 
-## New in v1.1.6
+## New in v2.0.0
 
-- Implemented `IDisposable` on all classes for proper resource cleanup
-- Fixed memory leaks caused by undisposed `PerformanceCounter` objects
-- Fixed memory leaks from undisposed `Process` objects in monitored processes
-- Added thread-safe caching for monitored process data
+- **Cross-platform support** for Windows, Linux, and macOS
+- New `PerformanceStatisticsFactory` for automatic platform detection
+- New interfaces: `IPerformanceStatistics`, `ISystemCounters`, `IProcessCounters`
+- Full backward compatibility with existing Windows-specific classes
+- `PlatformTypeEnum` enum for explicit platform identification
 
-## Example Project
+## Example Projects
 
-Refer to the `Test` project for exercising the library.
+- `Test` - Interactive console application for manual testing
+- `Test.Automated` - Automated test suite with 54 cross-platform tests
 
 ## Getting Started
 
-### Basic Usage
+### Cross-Platform Usage (Recommended)
 
 ```csharp
 using PerformanceStatistics;
 
-// Create the statistics object (implements IDisposable)
-using (var stats = new WindowsPerformanceStatistics())
-{
-    // Add process names to monitor (optional)
-    stats.MonitoredProcessNames.Add("chrome");
-    stats.MonitoredProcessNames.Add("outlook");
+// Factory automatically detects platform and creates appropriate implementation
+using var stats = PerformanceStatisticsFactory.Create();
 
-    // Print all statistics
-    Console.WriteLine(stats.ToString());
+Console.WriteLine($"Platform: {PerformanceStatisticsFactory.CurrentPlatform}");
+Console.WriteLine($"CPU: {stats.System.CpuUtilizationPercent ?? 0}%");
+Console.WriteLine($"Free RAM: {stats.System.MemoryFreeMegabytes ?? 0} MB");
+
+// Add processes to monitor
+stats.MonitoredProcessNames.Add("dotnet");
+
+foreach (var kvp in stats.MonitoredProcesses)
+{
+    foreach (var proc in kvp.Value)
+    {
+        Console.WriteLine($"  {proc.ProcessName} (PID {proc.ProcessId}): {proc.WorkingSetMemory / 1024 / 1024} MB");
+    }
 }
 ```
 
-### Recommended Usage Pattern
+### Windows-Specific Usage
 
-Since `WindowsPerformanceStatistics` implements `IDisposable`, always use it with a `using` statement or call `Dispose()` when finished:
+```csharp
+using PerformanceStatistics.Windows;
+
+// Direct Windows implementation
+using var stats = new WindowsPerformanceStatistics();
+
+Console.WriteLine($"CPU: {stats.System.CpuUtilizationPercent}%");
+Console.WriteLine($"Free RAM: {stats.System.MemoryFreeMegabytes} MB");
+```
+
+### Checking Platform Support
 
 ```csharp
 using PerformanceStatistics;
 
-// Option 1: using statement (recommended)
-using (var stats = new WindowsPerformanceStatistics())
+if (PerformanceStatisticsFactory.IsPlatformSupported)
 {
-    Console.WriteLine($"CPU: {stats.System.CpuUtilizationPercent}%");
-    Console.WriteLine($"Free RAM: {stats.System.MemoryFreeMegabytes} MB");
-}
-
-// Option 2: using declaration (C# 8+)
-using var stats = new WindowsPerformanceStatistics();
-Console.WriteLine($"CPU: {stats.System.CpuUtilizationPercent}%");
-
-// Option 3: Manual disposal (for long-lived instances)
-var stats = new WindowsPerformanceStatistics();
-try
-{
+    Console.WriteLine($"Running on: {PerformanceStatisticsFactory.CurrentPlatform}");
+    using var stats = PerformanceStatisticsFactory.Create();
     // Use stats...
 }
-finally
+else
 {
-    stats.Dispose();
+    Console.WriteLine("Platform not supported");
 }
 ```
 
 ### Accessing System Counters
 
 ```csharp
-using var stats = new WindowsPerformanceStatistics();
+using var stats = PerformanceStatisticsFactory.Create();
 
-// CPU
-double cpuPercent = stats.System.CpuUtilizationPercent;
+// CPU (note: first call may return 0 as it requires two samples)
+double? cpuPercent = stats.System.CpuUtilizationPercent;
 
 // Memory
-double freeMemoryMB = stats.System.MemoryFreeMegabytes;
+double? freeMemoryMB = stats.System.MemoryFreeMegabytes;
 
 // Disk
-int diskReads = stats.System.TotalDiskReadOperations;
-int diskWrites = stats.System.TotalDiskWriteOperations;
-int diskReadQueue = stats.System.TotalDiskReadQueue;
-int diskWriteQueue = stats.System.TotalDiskWriteQueue;
-double diskFreePercent = stats.System.TotalDiskFreePercent;
-double diskFreeMB = stats.System.TotalDiskFreeMegabytes;
-double diskSizeMB = stats.System.TotalDiskSizeMegabytes;
-double diskUsedMB = stats.System.TotalDiskUsedMegabytes;
+int? diskReads = stats.System.TotalDiskReadOperations;
+int? diskWrites = stats.System.TotalDiskWriteOperations;
+int? diskReadQueue = stats.System.TotalDiskReadQueue;   // null on macOS
+int? diskWriteQueue = stats.System.TotalDiskWriteQueue; // null on macOS
+double? diskFreePercent = stats.System.TotalDiskFreePercent;
+double? diskFreeMB = stats.System.TotalDiskFreeMegabytes;
+double? diskSizeMB = stats.System.TotalDiskSizeMegabytes;
+double? diskUsedMB = stats.System.TotalDiskUsedMegabytes;
 ```
 
 ### Monitoring Specific Processes
 
 ```csharp
-using var stats = new WindowsPerformanceStatistics();
-stats.MonitoredProcessNames.Add("devenv");  // Visual Studio
-stats.MonitoredProcessNames.Add("sqlservr"); // SQL Server
+using var stats = PerformanceStatisticsFactory.Create();
+stats.MonitoredProcessNames.Add("dotnet");
+stats.MonitoredProcessNames.Add("node");
 
-// Access monitored process data
 foreach (var kvp in stats.MonitoredProcesses)
 {
     string processName = kvp.Key;
@@ -119,11 +131,10 @@ foreach (var kvp in stats.MonitoredProcesses)
     foreach (var process in kvp.Value)
     {
         Console.WriteLine($"Process: {process.ProcessName} (PID: {process.ProcessId})");
-        Console.WriteLine($"  CPU: {process.CpuUtilizationPercent}%");
-        Console.WriteLine($"  Private Memory: {process.PrivateMemory / (1024 * 1024)} MB");
+        Console.WriteLine($"  CPU: {process.CpuUtilizationPercent ?? 0}%");
         Console.WriteLine($"  Working Set: {process.WorkingSetMemory / (1024 * 1024)} MB");
         Console.WriteLine($"  Threads: {process.ThreadCount}");
-        Console.WriteLine($"  Handles: {process.HandleCount}");
+        Console.WriteLine($"  Handles: {process.HandleCount ?? 0}"); // 0 on macOS
     }
 }
 ```
@@ -131,7 +142,7 @@ foreach (var kvp in stats.MonitoredProcesses)
 ### Monitoring TCP Connections
 
 ```csharp
-using var stats = new WindowsPerformanceStatistics();
+using var stats = PerformanceStatisticsFactory.Create();
 
 // Get all active TCP connections
 var allConnections = stats.ActiveTcpConnections;
@@ -150,12 +161,12 @@ var specificConnections = stats.GetActiveTcpConnections(sourcePort: 8080, destPo
 ```csharp
 public class PerformanceMonitorService : IHostedService, IDisposable
 {
-    private WindowsPerformanceStatistics _stats;
+    private IPerformanceStatistics _stats;
     private Timer _timer;
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _stats = new WindowsPerformanceStatistics();
+        _stats = PerformanceStatisticsFactory.Create();
         _stats.MonitoredProcessNames.Add("MyApp");
 
         _timer = new Timer(CheckPerformance, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
@@ -164,12 +175,15 @@ public class PerformanceMonitorService : IHostedService, IDisposable
 
     private void CheckPerformance(object state)
     {
-        if (_stats.System.CpuUtilizationPercent > 90)
+        var cpu = _stats.System.CpuUtilizationPercent;
+        var memory = _stats.System.MemoryFreeMegabytes;
+
+        if (cpu.HasValue && cpu > 90)
         {
             // Alert: High CPU usage
         }
 
-        if (_stats.System.MemoryFreeMegabytes < 500)
+        if (memory.HasValue && memory < 500)
         {
             // Alert: Low memory
         }
@@ -189,93 +203,125 @@ public class PerformanceMonitorService : IHostedService, IDisposable
 }
 ```
 
-## Sample Output
+## Platform-Specific Metric Availability
 
-```
---------------------------------------------------
-System Counters                 :
-  CPU Utilization Percent       : 12%
-  Memory Free (Megabytes)       : 4638MB
-  Total Disk Read Operations    : 0
-  Total Disk Write Operations   : 15
-  Total Disk Read Queue         : 0
-  Total Disk Write Queue        : 0
-  Total Disk Free Percent       : 28%
-  Total Disk Free Megabytes     : 338436MB
-  Total Disk Size Megabytes     : 1208700MB
-  Total Disk Used Megabytes     : 870264MB
-Monitored Processes             : 2
-  chrome
-    Process ID                    : 39192
-    Process Name                  : chrome
-    Process Title                 : Welcome to my email!
-    Machine Name                  : .
-    CPU Utilization               : 0.5%
-    Handle Count                  : 2652
-    Thread Count                  : 43
-    Memory, Private               : 252215296 bytes
-    Memory, Paged System          : 1546536 bytes
-    Memory, Peak Paged System     : 282923008 bytes
-    Memory, Non-Paged System      : 97720 bytes
-    Memory, Virtual               : 2307852075008 bytes
-    Memory, Peak Virtual          : 2308019273728 bytes
-    Memory, Working Set           : 322637824 bytes
-    Memory, Peak Working Set      : 367566848 bytes
-  ---
-  outlook
-    ...
-  ---
-Active TCP Connections          : 137
-  | 127.0.0.1:49677 to 127.0.0.1:49678: Established
-  | 127.0.0.1:49678 to 127.0.0.1:49677: Established
-  ...
-```
+### System Counters
+
+| Metric | Windows | Linux | macOS | Notes |
+|--------|:-------:|:-----:|:-----:|-------|
+| `CpuUtilizationPercent` | ✓ | ✓ | ✓ | First call returns 0 (requires two samples) |
+| `MemoryFreeMegabytes` | ✓ | ✓ | ✓ | |
+| `TotalDiskReadOperations` | ✓ | ✓ | ~approx | macOS: approximated from combined transfers |
+| `TotalDiskWriteOperations` | ✓ | ✓ | ~approx | macOS: approximated from combined transfers |
+| `TotalDiskReadQueue` | ✓ | ~approx | null | Linux: approximated from I/O in progress |
+| `TotalDiskWriteQueue` | ✓ | ~approx | null | Linux: approximated from I/O in progress |
+| `TotalDiskFreePercent` | ✓ | ✓ | ✓ | |
+| `TotalDiskFreeMegabytes` | ✓ | ✓ | ✓ | |
+| `TotalDiskSizeMegabytes` | ✓ | ✓ | ✓ | |
+| `TotalDiskUsedMegabytes` | ✓ | ✓ | ✓ | |
+
+### Process Counters
+
+| Metric | Windows | Linux | macOS | Notes |
+|--------|:-------:|:-----:|:-----:|-------|
+| `ProcessId` | ✓ | ✓ | ✓ | |
+| `ProcessName` | ✓ | ✓ | ✓ | |
+| `ProcessTitle` | ✓ | empty | empty | No window concept on Linux/macOS |
+| `MachineName` | ✓ | ✓ | ✓ | |
+| `CpuUtilizationPercent` | ✓ | ✓ | ✓ | First call returns 0 (requires two samples) |
+| `HandleCount` | ✓ | ~fd count | 0 | Linux: counts `/proc/[pid]/fd` entries |
+| `ThreadCount` | ✓ | ✓ | ✓ | |
+| `PrivateMemory` | ✓ | ✓ | 0 | May return 0 on macOS |
+| `VirtualMemory` | ✓ | ✓ | ✓ | |
+| `WorkingSetMemory` | ✓ | ✓ | ✓ | |
+| `NonPagedSystemMemory` | ✓ | null | null | Windows-specific concept |
+| `PagedSystemMemory` | ✓ | null | null | Windows-specific concept |
+| `PeakPagedSystemMemory` | ✓ | null | null | Windows-specific concept |
+| `PeakVirtualSystemMemory` | ✓ | ✓ | ✓ | |
+| `PeakWorkingSetMemory` | ✓ | ✓ | 0 | May return 0 on macOS |
+
+**Legend:**
+- ✓ = Fully supported
+- ~approx = Approximated value
+- null = Returns null (metric not available)
+- 0 = Returns 0 (metric not tracked on this platform)
+- empty = Returns empty string
 
 ## API Reference
 
-### WindowsPerformanceStatistics
+### PerformanceStatisticsFactory (Static)
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `Create(List<string>)` | `IPerformanceStatistics` | Creates platform-appropriate instance |
+| `CurrentPlatform` | `PlatformTypeEnum` | Gets the current platform type |
+| `IsPlatformSupported` | `bool` | Whether the current platform is supported |
+
+### IPerformanceStatistics
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `System` | `WindowsSystemCounters` | System-wide performance counters |
+| `System` | `ISystemCounters` | System-wide performance counters |
 | `MonitoredProcessNames` | `List<string>` | List of process names to monitor |
-| `MonitoredProcesses` | `Dictionary<string, List<WindowsProcessCounters>>` | Performance data for monitored processes |
+| `MonitoredProcesses` | `Dictionary<string, List<IProcessCounters>>` | Performance data for monitored processes |
 | `ActiveTcpConnections` | `TcpConnectionInformation[]` | Array of active TCP connections |
 
-### WindowsSystemCounters
+### ISystemCounters
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `CpuUtilizationPercent` | `double` | Current CPU usage percentage |
-| `MemoryFreeMegabytes` | `double` | Available memory in MB |
-| `TotalDiskReadOperations` | `int` | Disk reads per second |
-| `TotalDiskWriteOperations` | `int` | Disk writes per second |
-| `TotalDiskReadQueue` | `int` | Average disk read queue length |
-| `TotalDiskWriteQueue` | `int` | Average disk write queue length |
-| `TotalDiskFreePercent` | `double` | Percentage of free disk space |
-| `TotalDiskFreeMegabytes` | `double` | Free disk space in MB |
-| `TotalDiskSizeMegabytes` | `double` | Total disk size in MB |
-| `TotalDiskUsedMegabytes` | `double` | Used disk space in MB |
+| `CpuUtilizationPercent` | `double?` | Current CPU usage percentage (0-100) |
+| `MemoryFreeMegabytes` | `double?` | Available memory in MB |
+| `TotalDiskReadOperations` | `int?` | Disk reads per second |
+| `TotalDiskWriteOperations` | `int?` | Disk writes per second |
+| `TotalDiskReadQueue` | `int?` | Average disk read queue length |
+| `TotalDiskWriteQueue` | `int?` | Average disk write queue length |
+| `TotalDiskFreePercent` | `double?` | Percentage of free disk space |
+| `TotalDiskFreeMegabytes` | `double?` | Free disk space in MB |
+| `TotalDiskSizeMegabytes` | `double?` | Total disk size in MB |
+| `TotalDiskUsedMegabytes` | `double?` | Used disk space in MB |
 
-### WindowsProcessCounters
+### IProcessCounters
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `ProcessId` | `int?` | Process ID |
 | `ProcessName` | `string` | Process name |
-| `ProcessTitle` | `string` | Main window title |
+| `ProcessTitle` | `string` | Main window title (Windows only) |
 | `MachineName` | `string` | Machine name |
-| `CpuUtilizationPercent` | `double` | CPU usage percentage for this process |
-| `HandleCount` | `int` | Number of handles |
-| `ThreadCount` | `int` | Number of threads |
-| `PrivateMemory` | `long` | Private memory in bytes |
-| `PagedSystemMemory` | `long` | Paged system memory in bytes |
-| `NonPagedSystemMemory` | `long` | Non-paged system memory in bytes |
-| `VirtualMemory` | `long` | Virtual memory in bytes |
-| `WorkingSetMemory` | `long` | Working set memory in bytes |
-| `PeakPagedSystemMemory` | `long` | Peak paged memory in bytes |
-| `PeakVirtualSystemMemory` | `long` | Peak virtual memory in bytes |
-| `PeakWorkingSetMemory` | `long` | Peak working set memory in bytes |
+| `CpuUtilizationPercent` | `double?` | CPU usage percentage for this process |
+| `HandleCount` | `int?` | Number of handles (fd count on Linux, 0 on macOS) |
+| `ThreadCount` | `int?` | Number of threads |
+| `PrivateMemory` | `long?` | Private memory in bytes |
+| `VirtualMemory` | `long?` | Virtual memory in bytes |
+| `WorkingSetMemory` | `long?` | Working set memory in bytes |
+| `NonPagedSystemMemory` | `long?` | Non-paged system memory (Windows only) |
+| `PagedSystemMemory` | `long?` | Paged system memory (Windows only) |
+| `PeakPagedSystemMemory` | `long?` | Peak paged memory (Windows only) |
+| `PeakVirtualSystemMemory` | `long?` | Peak virtual memory in bytes |
+| `PeakWorkingSetMemory` | `long?` | Peak working set memory in bytes |
+
+### PlatformTypeEnum
+
+| Value | Description |
+|-------|-------------|
+| `Unknown` | Unknown or unsupported platform |
+| `Windows` | Microsoft Windows |
+| `Linux` | Linux |
+| `Mac` | macOS |
+
+## Platform-Specific Namespaces
+
+All platform implementations are organized in their own namespaces and implement the common interfaces:
+
+- `PerformanceStatistics.Windows` - Windows implementation using Performance Counters
+  - `WindowsPerformanceStatistics`, `WindowsSystemCounters`, `WindowsProcessCounters`
+- `PerformanceStatistics.Linux` - Linux implementation using `/proc` filesystem
+  - `LinuxPerformanceStatistics`, `LinuxSystemCounters`, `LinuxProcessCounters`
+- `PerformanceStatistics.Mac` - macOS implementation using system commands
+  - `MacPerformanceStatistics`, `MacSystemCounters`, `MacProcessCounters`
+
+For cross-platform code, use `PerformanceStatisticsFactory.Create()` which returns `IPerformanceStatistics`.
 
 ## Version History
 

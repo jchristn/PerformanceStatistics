@@ -3,7 +3,7 @@ namespace PerformanceStatistics
     /// <summary>
     /// Supported platform types.
     /// </summary>
-    public enum PlatformType
+    public enum PlatformTypeEnum
     {
         /// <summary>
         /// Unknown or unsupported platform.

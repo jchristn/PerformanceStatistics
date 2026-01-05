@@ -770,70 +770,70 @@
             Checks if the current platform is supported.
             </summary>
         </member>
-        <member name="T:PerformanceStatistics.PlatformType">
+        <member name="T:PerformanceStatistics.PlatformTypeEnum">
             <summary>
             Supported platform types.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.PlatformType.Unknown">
+        <member name="F:PerformanceStatistics.PlatformTypeEnum.Unknown">
             <summary>
             Unknown or unsupported platform.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.PlatformType.Windows">
+        <member name="F:PerformanceStatistics.PlatformTypeEnum.Windows">
             <summary>
             Microsoft Windows.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.PlatformType.Linux">
+        <member name="F:PerformanceStatistics.PlatformTypeEnum.Linux">
             <summary>
             Linux.
             </summary>
         </member>
-        <member name="F:PerformanceStatistics.PlatformType.Mac">
+        <member name="F:PerformanceStatistics.PlatformTypeEnum.Mac">
             <summary>
             macOS (Mac OS X).
             </summary>
         </member>
-        <member name="T:PerformanceStatistics.WindowsPerformanceStatistics">
+        <member name="T:PerformanceStatistics.Windows.WindowsPerformanceStatistics">
             <summary>
             Windows performance statistics.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.System">
+        <member name="P:PerformanceStatistics.Windows.WindowsPerformanceStatistics.System">
             <summary>
             Statistics for the system.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.MonitoredProcessNames">
+        <member name="P:PerformanceStatistics.Windows.WindowsPerformanceStatistics.MonitoredProcessNames">
             <summary>
             Monitored process names.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.MonitoredProcesses">
+        <member name="P:PerformanceStatistics.Windows.WindowsPerformanceStatistics.MonitoredProcesses">
             <summary>
             Statistics for monitored processes.
             Refreshes process data on each access; previous process handles are disposed.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatistics.ActiveTcpConnections">
+        <member name="P:PerformanceStatistics.Windows.WindowsPerformanceStatistics.ActiveTcpConnections">
             <summary>
             Active TCP connections.
             </summary>
         </member>
-        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.#ctor(System.Collections.Generic.List{System.String})">
+        <member name="M:PerformanceStatistics.Windows.WindowsPerformanceStatistics.#ctor(System.Collections.Generic.List{System.String})">
             <summary>
             Instantiate.
             </summary>
             <param name="monitoredProcesses">Monitored process names.</param>
         </member>
-        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.ToString">
+        <member name="M:PerformanceStatistics.Windows.WindowsPerformanceStatistics.ToString">
             <summary>
             Produce a human-readable object.
             </summary>
             <returns></returns>
         </member>
-        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.GetActiveTcpConnections(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+        <member name="M:PerformanceStatistics.Windows.WindowsPerformanceStatistics.GetActiveTcpConnections(System.Nullable{System.Int32},System.Nullable{System.Int32})">
             <summary>
             Retrieve active TCP connections by port (source, destination, or both).
             </summary>
@@ -841,379 +841,184 @@
             <param name="destPort">Destination port.</param>
             <returns>Array of TCP connections.</returns>
         </member>
-        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.Dispose">
+        <member name="M:PerformanceStatistics.Windows.WindowsPerformanceStatistics.Dispose">
             <summary>
             Dispose of resources.
             </summary>
         </member>
-        <member name="M:PerformanceStatistics.WindowsPerformanceStatistics.Dispose(System.Boolean)">
+        <member name="M:PerformanceStatistics.Windows.WindowsPerformanceStatistics.Dispose(System.Boolean)">
             <summary>
             Dispose of resources.
             </summary>
             <param name="disposing">True if disposing.</param>
         </member>
-        <member name="T:PerformanceStatistics.WindowsPerformanceStatisticsAdapter">
-            <summary>
-            Adapter to make WindowsPerformanceStatistics implement IPerformanceStatistics.
-            This allows the existing Windows implementation to be used through the common interface
-            without modifying the original class.
-            </summary>
-        </member>
-        <member name="M:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.#ctor(System.Collections.Generic.List{System.String})">
-            <summary>
-            Instantiate.
-            </summary>
-            <param name="monitoredProcesses">Optional list of process names to monitor.</param>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.System">
-            <summary>
-            System-level performance counters.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.MonitoredProcessNames">
-            <summary>
-            List of process names to monitor.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.MonitoredProcesses">
-            <summary>
-            Performance data for monitored processes.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.ActiveTcpConnections">
-            <summary>
-            Active TCP connections.
-            </summary>
-        </member>
-        <member name="M:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.GetActiveTcpConnections(System.Nullable{System.Int32},System.Nullable{System.Int32})">
-            <summary>
-            Retrieve active TCP connections filtered by source and/or destination port.
-            </summary>
-        </member>
-        <member name="M:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.Dispose">
-            <summary>
-            Dispose of resources.
-            </summary>
-        </member>
-        <member name="T:PerformanceStatistics.WindowsProcessCounters">
+        <member name="T:PerformanceStatistics.Windows.WindowsProcessCounters">
             <summary>
             Windows process counters.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.ProcessId">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.ProcessId">
             <summary>
             Process ID.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.ProcessName">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.ProcessName">
             <summary>
             Process name.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.ProcessTitle">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.ProcessTitle">
             <summary>
             Process title.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.MachineName">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.MachineName">
             <summary>
             Machine name.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.CpuUtilizationPercent">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.CpuUtilizationPercent">
             <summary>
             CPU utilization percentage.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.HandleCount">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.HandleCount">
             <summary>
             Handle count.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.ThreadCount">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.ThreadCount">
             <summary>
             Thread count.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.NonPagedSystemMemory">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.NonPagedSystemMemory">
             <summary>
             Non-paged system memory.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.PagedSystemMemory">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.PagedSystemMemory">
             <summary>
             Paged system memory.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.PrivateMemory">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.PrivateMemory">
             <summary>
             Private memory.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.VirtualMemory">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.VirtualMemory">
             <summary>
             Virtual memory.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.WorkingSetMemory">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.WorkingSetMemory">
             <summary>
             Working set memory.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.PeakPagedSystemMemory">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.PeakPagedSystemMemory">
             <summary>
             Peak paged system memory.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.PeakVirtualSystemMemory">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.PeakVirtualSystemMemory">
             <summary>
             Peak virtual system memory.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCounters.PeakWorkingSetMemory">
+        <member name="P:PerformanceStatistics.Windows.WindowsProcessCounters.PeakWorkingSetMemory">
             <summary>
             Peak working set memory.
             </summary>
         </member>
-        <member name="M:PerformanceStatistics.WindowsProcessCounters.#ctor(System.Diagnostics.Process)">
+        <member name="M:PerformanceStatistics.Windows.WindowsProcessCounters.#ctor(System.Diagnostics.Process)">
             <summary>
             Instantiate.
             </summary>
         </member>
-        <member name="M:PerformanceStatistics.WindowsProcessCounters.ToString">
+        <member name="M:PerformanceStatistics.Windows.WindowsProcessCounters.ToString">
             <summary>
             Produce a human-readable object.
             </summary>
             <returns></returns>
         </member>
-        <member name="M:PerformanceStatistics.WindowsProcessCounters.Dispose">
+        <member name="M:PerformanceStatistics.Windows.WindowsProcessCounters.Dispose">
             <summary>
             Dispose of resources.
             </summary>
         </member>
-        <member name="M:PerformanceStatistics.WindowsProcessCounters.Dispose(System.Boolean)">
+        <member name="M:PerformanceStatistics.Windows.WindowsProcessCounters.Dispose(System.Boolean)">
             <summary>
             Dispose of resources.
             </summary>
             <param name="disposing">True if disposing.</param>
         </member>
-        <member name="T:PerformanceStatistics.WindowsProcessCountersAdapter">
-            <summary>
-            Adapter for WindowsProcessCounters to implement IProcessCounters.
-            </summary>
-        </member>
-        <member name="M:PerformanceStatistics.WindowsProcessCountersAdapter.#ctor(PerformanceStatistics.WindowsProcessCounters)">
-            <summary>
-            Instantiate.
-            </summary>
-            <param name="inner">The WindowsProcessCounters instance to wrap.</param>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.ProcessId">
-            <summary>
-            Process ID.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.ProcessName">
-            <summary>
-            Process name.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.ProcessTitle">
-            <summary>
-            Process title.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.MachineName">
-            <summary>
-            Machine name.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.CpuUtilizationPercent">
-            <summary>
-            CPU utilization percentage.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.HandleCount">
-            <summary>
-            Handle count.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.ThreadCount">
-            <summary>
-            Thread count.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.NonPagedSystemMemory">
-            <summary>
-            Non-paged system memory.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.PagedSystemMemory">
-            <summary>
-            Paged system memory.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.PrivateMemory">
-            <summary>
-            Private memory.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.VirtualMemory">
-            <summary>
-            Virtual memory.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.WorkingSetMemory">
-            <summary>
-            Working set memory.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.PeakPagedSystemMemory">
-            <summary>
-            Peak paged system memory.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.PeakVirtualSystemMemory">
-            <summary>
-            Peak virtual system memory.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.PeakWorkingSetMemory">
-            <summary>
-            Peak working set memory.
-            </summary>
-        </member>
-        <member name="M:PerformanceStatistics.WindowsProcessCountersAdapter.Dispose">
-            <summary>
-            Dispose of resources.
-            </summary>
-        </member>
-        <member name="T:PerformanceStatistics.WindowsSystemCounters">
+        <member name="T:PerformanceStatistics.Windows.WindowsSystemCounters">
             <summary>
             Windows system counters.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCounters.CpuUtilizationPercent">
+        <member name="P:PerformanceStatistics.Windows.WindowsSystemCounters.CpuUtilizationPercent">
             <summary>
             CPU utilization percentage.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCounters.MemoryFreeMegabytes">
+        <member name="P:PerformanceStatistics.Windows.WindowsSystemCounters.MemoryFreeMegabytes">
             <summary>
             Memory free in Megabytes.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskReadOperations">
+        <member name="P:PerformanceStatistics.Windows.WindowsSystemCounters.TotalDiskReadOperations">
             <summary>
             Total disk read operations.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskWriteOperations">
+        <member name="P:PerformanceStatistics.Windows.WindowsSystemCounters.TotalDiskWriteOperations">
             <summary>
             Total disk write operations.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskReadQueue">
+        <member name="P:PerformanceStatistics.Windows.WindowsSystemCounters.TotalDiskReadQueue">
             <summary>
             Total disk read queue.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskWriteQueue">
+        <member name="P:PerformanceStatistics.Windows.WindowsSystemCounters.TotalDiskWriteQueue">
             <summary>
             Total disk write queue.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskFreePercent">
+        <member name="P:PerformanceStatistics.Windows.WindowsSystemCounters.TotalDiskFreePercent">
             <summary>
             Total disk free percent.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskFreeMegabytes">
+        <member name="P:PerformanceStatistics.Windows.WindowsSystemCounters.TotalDiskFreeMegabytes">
             <summary>
             Total disk free megabytes.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskSizeMegabytes">
+        <member name="P:PerformanceStatistics.Windows.WindowsSystemCounters.TotalDiskSizeMegabytes">
             <summary>
             Total disk size megabytes.
             </summary>
         </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCounters.TotalDiskUsedMegabytes">
+        <member name="P:PerformanceStatistics.Windows.WindowsSystemCounters.TotalDiskUsedMegabytes">
             <summary>
             Total disk used megabytes.
             </summary>
         </member>
-        <member name="M:PerformanceStatistics.WindowsSystemCounters.#ctor">
+        <member name="M:PerformanceStatistics.Windows.WindowsSystemCounters.#ctor">
             <summary>
             Instantiate.
             </summary>
         </member>
-        <member name="M:PerformanceStatistics.WindowsSystemCounters.ToString">
+        <member name="M:PerformanceStatistics.Windows.WindowsSystemCounters.ToString">
             <summary>
             Produce a human-readable object.
             </summary>
             <returns></returns>
-        </member>
-        <member name="T:PerformanceStatistics.WindowsSystemCountersAdapter">
-            <summary>
-            Adapter for WindowsSystemCounters to implement ISystemCounters.
-            </summary>
-        </member>
-        <member name="M:PerformanceStatistics.WindowsSystemCountersAdapter.#ctor(PerformanceStatistics.WindowsSystemCounters)">
-            <summary>
-            Instantiate.
-            </summary>
-            <param name="inner">The WindowsSystemCounters instance to wrap.</param>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.CpuUtilizationPercent">
-            <summary>
-            CPU utilization percentage.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.MemoryFreeMegabytes">
-            <summary>
-            Memory free in megabytes.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskReadOperations">
-            <summary>
-            Total disk read operations per second.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskWriteOperations">
-            <summary>
-            Total disk write operations per second.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskReadQueue">
-            <summary>
-            Total disk read queue length.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskWriteQueue">
-            <summary>
-            Total disk write queue length.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskFreePercent">
-            <summary>
-            Total disk free percentage.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskFreeMegabytes">
-            <summary>
-            Total disk free megabytes.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskSizeMegabytes">
-            <summary>
-            Total disk size megabytes.
-            </summary>
-        </member>
-        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskUsedMegabytes">
-            <summary>
-            Total disk used megabytes.
-            </summary>
         </member>
     </members>
 </doc>

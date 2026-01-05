@@ -21,7 +21,7 @@ namespace PerformanceStatistics
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return new WindowsPerformanceStatisticsAdapter(monitoredProcesses);
+                return new Windows.WindowsPerformanceStatistics(monitoredProcesses);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
@@ -42,17 +42,17 @@ namespace PerformanceStatistics
         /// <summary>
         /// Gets the current platform type.
         /// </summary>
-        public static PlatformType CurrentPlatform
+        public static PlatformTypeEnum CurrentPlatform
         {
             get
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    return PlatformType.Windows;
+                    return PlatformTypeEnum.Windows;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    return PlatformType.Linux;
+                    return PlatformTypeEnum.Linux;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    return PlatformType.Mac;
-                return PlatformType.Unknown;
+                    return PlatformTypeEnum.Mac;
+                return PlatformTypeEnum.Unknown;
             }
         }
 

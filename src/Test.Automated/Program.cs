@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Net.NetworkInformation;
 using System.Threading;
 using PerformanceStatistics;
+using PerformanceStatistics.Windows;
 
 namespace Test.Automated
 {
@@ -22,7 +23,7 @@ namespace Test.Automated
             _totalStopwatch.Start();
 
             // Platform detection
-            PlatformType platform = PerformanceStatisticsFactory.CurrentPlatform;
+            PlatformTypeEnum platform = PerformanceStatisticsFactory.CurrentPlatform;
             Console.WriteLine($"Detected Platform: {platform}");
             Console.WriteLine($"Platform Supported: {PerformanceStatisticsFactory.IsPlatformSupported}");
             Console.WriteLine();
@@ -33,7 +34,7 @@ namespace Test.Automated
             RunFactoryTests();
             RunInterfaceTests();
 
-            if (platform == PlatformType.Windows)
+            if (platform == PlatformTypeEnum.Windows)
             {
                 RunWindowsSpecificTests();
             }
@@ -63,7 +64,7 @@ namespace Test.Automated
             RunTest("Factory.CurrentPlatform returns valid value", () =>
             {
                 var platform = PerformanceStatisticsFactory.CurrentPlatform;
-                return platform != PlatformType.Unknown;
+                return platform != PlatformTypeEnum.Unknown;
             });
 
             RunTest("Factory.IsPlatformSupported returns true", () =>
