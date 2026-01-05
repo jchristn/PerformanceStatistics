@@ -4,6 +4,797 @@
         <name>PerformanceStatistics</name>
     </assembly>
     <members>
+        <member name="T:PerformanceStatistics.IPerformanceStatistics">
+            <summary>
+            Interface for platform performance statistics.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IPerformanceStatistics.System">
+            <summary>
+            System-level performance counters.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IPerformanceStatistics.MonitoredProcessNames">
+            <summary>
+            List of process names to monitor.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IPerformanceStatistics.MonitoredProcesses">
+            <summary>
+            Performance data for monitored processes.
+            Key: process name, Value: list of process counters for all instances with that name.
+            Refreshes process data on each access; previous process handles are disposed.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IPerformanceStatistics.ActiveTcpConnections">
+            <summary>
+            Active TCP connections.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.IPerformanceStatistics.GetActiveTcpConnections(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Retrieve active TCP connections filtered by source and/or destination port.
+            </summary>
+            <param name="sourcePort">Source port filter (optional).</param>
+            <param name="destPort">Destination port filter (optional).</param>
+            <returns>Array of TCP connections matching the filter criteria.</returns>
+        </member>
+        <member name="T:PerformanceStatistics.IProcessCounters">
+            <summary>
+            Interface for process-level performance counters.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.ProcessId">
+            <summary>
+            Process ID.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.ProcessName">
+            <summary>
+            Process name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.ProcessTitle">
+            <summary>
+            Main window title.
+            Typically empty on non-Windows platforms as there is no window concept.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.MachineName">
+            <summary>
+            Machine name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage for this process.
+            Returns null if the metric is unavailable on this platform.
+            Note: May return 0 on first call as CPU calculation requires two samples.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.HandleCount">
+            <summary>
+            Number of handles.
+            On Windows, returns the actual handle count.
+            On Linux, returns the file descriptor count from /proc/[pid]/fd.
+            On macOS, returns 0 as this metric is not readily available.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.ThreadCount">
+            <summary>
+            Number of threads.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.NonPagedSystemMemory">
+            <summary>
+            Non-paged system memory in bytes.
+            Returns null on non-Windows platforms (Windows-specific concept).
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.PagedSystemMemory">
+            <summary>
+            Paged system memory in bytes.
+            Returns null on non-Windows platforms (Windows-specific concept).
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.PrivateMemory">
+            <summary>
+            Private memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.VirtualMemory">
+            <summary>
+            Virtual memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.WorkingSetMemory">
+            <summary>
+            Working set memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.PeakPagedSystemMemory">
+            <summary>
+            Peak paged memory in bytes.
+            Returns null on non-Windows platforms (Windows-specific tracking).
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.PeakVirtualSystemMemory">
+            <summary>
+            Peak virtual memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.IProcessCounters.PeakWorkingSetMemory">
+            <summary>
+            Peak working set memory in bytes.
+            </summary>
+        </member>
+        <member name="T:PerformanceStatistics.ISystemCounters">
+            <summary>
+            Interface for system-level performance counters.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.ISystemCounters.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage (0-100).
+            Returns null if the metric is unavailable on this platform.
+            Note: May return 0 on first call as CPU calculation requires two samples.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.ISystemCounters.MemoryFreeMegabytes">
+            <summary>
+            Available/free memory in megabytes.
+            Returns null if the metric is unavailable on this platform.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskReadOperations">
+            <summary>
+            Total disk read operations per second across all disks.
+            Returns null if the metric is unavailable on this platform.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskWriteOperations">
+            <summary>
+            Total disk write operations per second across all disks.
+            Returns null if the metric is unavailable on this platform.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskReadQueue">
+            <summary>
+            Average disk read queue length.
+            Returns null if the metric is unavailable on this platform (e.g., macOS).
+            Linux provides an approximation from /proc/diskstats.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskWriteQueue">
+            <summary>
+            Average disk write queue length.
+            Returns null if the metric is unavailable on this platform (e.g., macOS).
+            Linux provides an approximation from /proc/diskstats.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskFreePercent">
+            <summary>
+            Percentage of free disk space across all disks (0-100).
+            Returns null if the metric is unavailable on this platform.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskFreeMegabytes">
+            <summary>
+            Free disk space in megabytes across all disks.
+            Returns null if the metric is unavailable on this platform.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskSizeMegabytes">
+            <summary>
+            Total disk size in megabytes across all disks.
+            Returns null if the metric is unavailable on this platform.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.ISystemCounters.TotalDiskUsedMegabytes">
+            <summary>
+            Used disk space in megabytes across all disks.
+            Returns null if the metric is unavailable on this platform.
+            </summary>
+        </member>
+        <member name="T:PerformanceStatistics.Linux.LinuxPerformanceStatistics">
+            <summary>
+            Linux performance statistics.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxPerformanceStatistics.System">
+            <summary>
+            Statistics for the system.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxPerformanceStatistics.MonitoredProcessNames">
+            <summary>
+            Monitored process names.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxPerformanceStatistics.MonitoredProcesses">
+            <summary>
+            Statistics for monitored processes.
+            Refreshes process data on each access; previous process handles are disposed.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxPerformanceStatistics.ActiveTcpConnections">
+            <summary>
+            Active TCP connections.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxPerformanceStatistics.#ctor(System.Collections.Generic.List{System.String})">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="monitoredProcesses">Monitored process names.</param>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxPerformanceStatistics.ToString">
+            <summary>
+            Produce a human-readable object.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxPerformanceStatistics.GetActiveTcpConnections(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Retrieve active TCP connections by port (source, destination, or both).
+            </summary>
+            <param name="sourcePort">Source port.</param>
+            <param name="destPort">Destination port.</param>
+            <returns>Array of TCP connections.</returns>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxPerformanceStatistics.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxPerformanceStatistics.Dispose(System.Boolean)">
+            <summary>
+            Dispose of resources.
+            </summary>
+            <param name="disposing">True if disposing.</param>
+        </member>
+        <member name="T:PerformanceStatistics.Linux.LinuxProcessCounters">
+            <summary>
+            Linux process counters.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxProcessCounters.#ctor(System.Diagnostics.Process)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="process">The process to monitor.</param>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.ProcessId">
+            <summary>
+            Process ID.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.ProcessName">
+            <summary>
+            Process name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.ProcessTitle">
+            <summary>
+            Process title. Typically empty on Linux (no window concept).
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.MachineName">
+            <summary>
+            Machine name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.CpuUtilizationPercent">
+            <summary>
+            CPU utilization calculated from /proc/[pid]/stat.
+            Requires two samples; first call returns 0.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.HandleCount">
+            <summary>
+            Handle count via /proc/[pid]/fd directory count.
+            Returns 0 if permission denied or process exited.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.ThreadCount">
+            <summary>
+            Thread count.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.NonPagedSystemMemory">
+            <summary>
+            Non-paged system memory. Not applicable on Linux; returns null.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.PagedSystemMemory">
+            <summary>
+            Paged system memory. Not applicable on Linux; returns null.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.PrivateMemory">
+            <summary>
+            Private memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.VirtualMemory">
+            <summary>
+            Virtual memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.WorkingSetMemory">
+            <summary>
+            Working set memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.PeakPagedSystemMemory">
+            <summary>
+            Peak paged memory. Not tracked on Linux; returns null.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.PeakVirtualSystemMemory">
+            <summary>
+            Peak virtual memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxProcessCounters.PeakWorkingSetMemory">
+            <summary>
+            Peak working set memory in bytes.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxProcessCounters.ToString">
+            <summary>
+            Produce a human-readable object.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxProcessCounters.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxProcessCounters.Dispose(System.Boolean)">
+            <summary>
+            Dispose of resources.
+            </summary>
+            <param name="disposing">True if disposing.</param>
+        </member>
+        <member name="T:PerformanceStatistics.Linux.LinuxSystemCounters">
+            <summary>
+            Linux system counters using /proc filesystem.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxSystemCounters.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxSystemCounters.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage.
+            Requires two samples to calculate; first call initializes sampling and returns 0.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxSystemCounters.MemoryFreeMegabytes">
+            <summary>
+            Available memory in megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxSystemCounters.TotalDiskReadOperations">
+            <summary>
+            Disk read operations per second.
+            Requires two samples to calculate delta.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxSystemCounters.TotalDiskWriteOperations">
+            <summary>
+            Disk write operations per second.
+            Requires two samples to calculate delta.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxSystemCounters.TotalDiskReadQueue">
+            <summary>
+            Disk read queue length.
+            Approximated from I/O in progress from /proc/diskstats (divided by 2).
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxSystemCounters.TotalDiskWriteQueue">
+            <summary>
+            Disk write queue length.
+            Approximated from I/O in progress from /proc/diskstats (divided by 2).
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxSystemCounters.TotalDiskFreePercent">
+            <summary>
+            Disk free percentage using DriveInfo.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxSystemCounters.TotalDiskFreeMegabytes">
+            <summary>
+            Disk free megabytes using DriveInfo.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxSystemCounters.TotalDiskSizeMegabytes">
+            <summary>
+            Total disk size in megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Linux.LinuxSystemCounters.TotalDiskUsedMegabytes">
+            <summary>
+            Disk used megabytes.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.LinuxSystemCounters.ToString">
+            <summary>
+            Produce a human-readable object.
+            </summary>
+        </member>
+        <member name="T:PerformanceStatistics.Linux.ProcFileParser">
+            <summary>
+            Utility class for parsing Linux /proc filesystem.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.ProcFileParser.GetCpuTimes">
+            <summary>
+            Reads and parses /proc/stat to get CPU statistics.
+            Returns (total jiffies, idle jiffies) tuple.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.ProcFileParser.CalculateCpuPercent(System.ValueTuple{System.Int64,System.Int64},System.ValueTuple{System.Int64,System.Int64})">
+            <summary>
+            Calculates CPU utilization percentage from two samples.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.ProcFileParser.GetAvailableMemoryKb">
+            <summary>
+            Reads /proc/meminfo and returns available memory in KB.
+            Uses MemAvailable if present (kernel 3.14+), otherwise MemFree + Buffers + Cached.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.ProcFileParser.GetDiskStats">
+            <summary>
+            Parses /proc/diskstats and returns aggregated I/O stats.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.ProcFileParser.GetProcessCpuTimes(System.Int32)">
+            <summary>
+            Reads /proc/[pid]/stat for process CPU times.
+            Returns (utime, stime) in clock ticks.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.ProcFileParser.GetProcessFdCount(System.Int32)">
+            <summary>
+            Counts file descriptors for a process via /proc/[pid]/fd.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.ProcFileParser.GetClockTicksPerSecond">
+            <summary>
+            Gets clock ticks per second (USER_HZ, typically 100 on Linux).
+            </summary>
+        </member>
+        <member name="T:PerformanceStatistics.Linux.DiskStats">
+            <summary>
+            Aggregated disk statistics from /proc/diskstats.
+            </summary>
+        </member>
+        <member name="T:PerformanceStatistics.Mac.MacPerformanceStatistics">
+            <summary>
+            macOS performance statistics.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacPerformanceStatistics.System">
+            <summary>
+            Statistics for the system.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacPerformanceStatistics.MonitoredProcessNames">
+            <summary>
+            Monitored process names.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacPerformanceStatistics.MonitoredProcesses">
+            <summary>
+            Statistics for monitored processes.
+            Refreshes process data on each access; previous process handles are disposed.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacPerformanceStatistics.ActiveTcpConnections">
+            <summary>
+            Active TCP connections.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacPerformanceStatistics.#ctor(System.Collections.Generic.List{System.String})">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="monitoredProcesses">Monitored process names.</param>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacPerformanceStatistics.ToString">
+            <summary>
+            Produce a human-readable object.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacPerformanceStatistics.GetActiveTcpConnections(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Retrieve active TCP connections by port (source, destination, or both).
+            </summary>
+            <param name="sourcePort">Source port.</param>
+            <param name="destPort">Destination port.</param>
+            <returns>Array of TCP connections.</returns>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacPerformanceStatistics.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacPerformanceStatistics.Dispose(System.Boolean)">
+            <summary>
+            Dispose of resources.
+            </summary>
+            <param name="disposing">True if disposing.</param>
+        </member>
+        <member name="T:PerformanceStatistics.Mac.MacProcessCounters">
+            <summary>
+            macOS process counters.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacProcessCounters.#ctor(System.Diagnostics.Process)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="process">The process to monitor.</param>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.ProcessId">
+            <summary>
+            Process ID.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.ProcessName">
+            <summary>
+            Process name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.ProcessTitle">
+            <summary>
+            Process title. Typically empty on macOS.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.MachineName">
+            <summary>
+            Machine name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.CpuUtilizationPercent">
+            <summary>
+            CPU utilization using Process.TotalProcessorTime delta.
+            Requires two samples; first call returns 0.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.HandleCount">
+            <summary>
+            Handle count. Returns 0 on macOS (not available via Process class).
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.ThreadCount">
+            <summary>
+            Thread count.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.NonPagedSystemMemory">
+            <summary>
+            Non-paged system memory. Not applicable on macOS; returns null.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.PagedSystemMemory">
+            <summary>
+            Paged system memory. Not applicable on macOS; returns null.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.PrivateMemory">
+            <summary>
+            Private memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.VirtualMemory">
+            <summary>
+            Virtual memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.WorkingSetMemory">
+            <summary>
+            Working set memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.PeakPagedSystemMemory">
+            <summary>
+            Peak paged memory. Not tracked on macOS; returns null.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.PeakVirtualSystemMemory">
+            <summary>
+            Peak virtual memory in bytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacProcessCounters.PeakWorkingSetMemory">
+            <summary>
+            Peak working set memory in bytes.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacProcessCounters.ToString">
+            <summary>
+            Produce a human-readable object.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacProcessCounters.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacProcessCounters.Dispose(System.Boolean)">
+            <summary>
+            Dispose of resources.
+            </summary>
+            <param name="disposing">True if disposing.</param>
+        </member>
+        <member name="T:PerformanceStatistics.Mac.MacSystemCounters">
+            <summary>
+            macOS system counters.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacSystemCounters.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacSystemCounters.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacSystemCounters.MemoryFreeMegabytes">
+            <summary>
+            Available memory in megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacSystemCounters.TotalDiskReadOperations">
+            <summary>
+            Disk read operations per second.
+            Note: macOS iostat provides combined transfers; this returns half as approximation.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacSystemCounters.TotalDiskWriteOperations">
+            <summary>
+            Disk write operations per second.
+            Note: macOS iostat provides combined transfers; this returns half as approximation.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacSystemCounters.TotalDiskReadQueue">
+            <summary>
+            Disk read queue length.
+            Not readily available on macOS; returns null.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacSystemCounters.TotalDiskWriteQueue">
+            <summary>
+            Disk write queue length.
+            Not readily available on macOS; returns null.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacSystemCounters.TotalDiskFreePercent">
+            <summary>
+            Disk free percentage using DriveInfo.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacSystemCounters.TotalDiskFreeMegabytes">
+            <summary>
+            Disk free megabytes using DriveInfo.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacSystemCounters.TotalDiskSizeMegabytes">
+            <summary>
+            Total disk size in megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.Mac.MacSystemCounters.TotalDiskUsedMegabytes">
+            <summary>
+            Disk used megabytes.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacSystemCounters.ToString">
+            <summary>
+            Produce a human-readable object.
+            </summary>
+        </member>
+        <member name="T:PerformanceStatistics.Mac.MacSystemInfo">
+            <summary>
+            Utility class for macOS system information retrieval.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacSystemInfo.ExecuteCommand(System.String,System.String,System.Int32)">
+            <summary>
+            Executes a command and returns stdout.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacSystemInfo.GetCpuUtilization">
+            <summary>
+            Gets CPU utilization using top command.
+            Returns percentage of CPU in use (100 - idle).
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacSystemInfo.GetAvailableMemoryBytes">
+            <summary>
+            Gets available memory using vm_stat.
+            Returns available memory in bytes.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacSystemInfo.GetPageSize">
+            <summary>
+            Gets memory page size.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacSystemInfo.GetDiskStats">
+            <summary>
+            Gets disk I/O statistics using iostat.
+            Returns combined transfer operations per second.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Mac.MacSystemInfo.GetProcessCpuTime(System.Int32)">
+            <summary>
+            Gets process CPU time using the Process class.
+            </summary>
+        </member>
+        <member name="T:PerformanceStatistics.Mac.MacDiskStats">
+            <summary>
+            Disk statistics from iostat.
+            </summary>
+        </member>
+        <member name="T:PerformanceStatistics.PerformanceStatisticsFactory">
+            <summary>
+            Factory for creating platform-appropriate performance statistics instances.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.PerformanceStatisticsFactory.Create(System.Collections.Generic.List{System.String})">
+            <summary>
+            Creates a performance statistics instance for the current platform.
+            </summary>
+            <param name="monitoredProcesses">Optional list of process names to monitor.</param>
+            <returns>Platform-specific IPerformanceStatistics implementation.</returns>
+            <exception cref="T:System.PlatformNotSupportedException">
+            Thrown when the current platform is not supported.
+            </exception>
+        </member>
+        <member name="P:PerformanceStatistics.PerformanceStatisticsFactory.CurrentPlatform">
+            <summary>
+            Gets the current platform type.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.PerformanceStatisticsFactory.IsPlatformSupported">
+            <summary>
+            Checks if the current platform is supported.
+            </summary>
+        </member>
+        <member name="T:PerformanceStatistics.PlatformType">
+            <summary>
+            Supported platform types.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.PlatformType.Unknown">
+            <summary>
+            Unknown or unsupported platform.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.PlatformType.Windows">
+            <summary>
+            Microsoft Windows.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.PlatformType.Linux">
+            <summary>
+            Linux.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.PlatformType.Mac">
+            <summary>
+            macOS (Mac OS X).
+            </summary>
+        </member>
         <member name="T:PerformanceStatistics.WindowsPerformanceStatistics">
             <summary>
             Windows performance statistics.
@@ -60,6 +851,49 @@
             Dispose of resources.
             </summary>
             <param name="disposing">True if disposing.</param>
+        </member>
+        <member name="T:PerformanceStatistics.WindowsPerformanceStatisticsAdapter">
+            <summary>
+            Adapter to make WindowsPerformanceStatistics implement IPerformanceStatistics.
+            This allows the existing Windows implementation to be used through the common interface
+            without modifying the original class.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.#ctor(System.Collections.Generic.List{System.String})">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="monitoredProcesses">Optional list of process names to monitor.</param>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.System">
+            <summary>
+            System-level performance counters.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.MonitoredProcessNames">
+            <summary>
+            List of process names to monitor.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.MonitoredProcesses">
+            <summary>
+            Performance data for monitored processes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.ActiveTcpConnections">
+            <summary>
+            Active TCP connections.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.GetActiveTcpConnections(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Retrieve active TCP connections filtered by source and/or destination port.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsPerformanceStatisticsAdapter.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
         </member>
         <member name="T:PerformanceStatistics.WindowsProcessCounters">
             <summary>
@@ -163,6 +997,97 @@
             </summary>
             <param name="disposing">True if disposing.</param>
         </member>
+        <member name="T:PerformanceStatistics.WindowsProcessCountersAdapter">
+            <summary>
+            Adapter for WindowsProcessCounters to implement IProcessCounters.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsProcessCountersAdapter.#ctor(PerformanceStatistics.WindowsProcessCounters)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="inner">The WindowsProcessCounters instance to wrap.</param>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.ProcessId">
+            <summary>
+            Process ID.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.ProcessName">
+            <summary>
+            Process name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.ProcessTitle">
+            <summary>
+            Process title.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.MachineName">
+            <summary>
+            Machine name.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.HandleCount">
+            <summary>
+            Handle count.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.ThreadCount">
+            <summary>
+            Thread count.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.NonPagedSystemMemory">
+            <summary>
+            Non-paged system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.PagedSystemMemory">
+            <summary>
+            Paged system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.PrivateMemory">
+            <summary>
+            Private memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.VirtualMemory">
+            <summary>
+            Virtual memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.WorkingSetMemory">
+            <summary>
+            Working set memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.PeakPagedSystemMemory">
+            <summary>
+            Peak paged system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.PeakVirtualSystemMemory">
+            <summary>
+            Peak virtual system memory.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsProcessCountersAdapter.PeakWorkingSetMemory">
+            <summary>
+            Peak working set memory.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsProcessCountersAdapter.Dispose">
+            <summary>
+            Dispose of resources.
+            </summary>
+        </member>
         <member name="T:PerformanceStatistics.WindowsSystemCounters">
             <summary>
             Windows system counters.
@@ -228,6 +1153,67 @@
             Produce a human-readable object.
             </summary>
             <returns></returns>
+        </member>
+        <member name="T:PerformanceStatistics.WindowsSystemCountersAdapter">
+            <summary>
+            Adapter for WindowsSystemCounters to implement ISystemCounters.
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.WindowsSystemCountersAdapter.#ctor(PerformanceStatistics.WindowsSystemCounters)">
+            <summary>
+            Instantiate.
+            </summary>
+            <param name="inner">The WindowsSystemCounters instance to wrap.</param>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.CpuUtilizationPercent">
+            <summary>
+            CPU utilization percentage.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.MemoryFreeMegabytes">
+            <summary>
+            Memory free in megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskReadOperations">
+            <summary>
+            Total disk read operations per second.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskWriteOperations">
+            <summary>
+            Total disk write operations per second.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskReadQueue">
+            <summary>
+            Total disk read queue length.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskWriteQueue">
+            <summary>
+            Total disk write queue length.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskFreePercent">
+            <summary>
+            Total disk free percentage.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskFreeMegabytes">
+            <summary>
+            Total disk free megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskSizeMegabytes">
+            <summary>
+            Total disk size megabytes.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.WindowsSystemCountersAdapter.TotalDiskUsedMegabytes">
+            <summary>
+            Total disk used megabytes.
+            </summary>
         </member>
     </members>
 </doc>
