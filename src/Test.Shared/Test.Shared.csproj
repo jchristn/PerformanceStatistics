@@ -1,21 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
-    <AssemblyName>Test.Automated</AssemblyName>
-    <RootNamespace>Test.Automated</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>Test.Shared</AssemblyName>
+    <RootNamespace>Test.Shared</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Touchstone.Cli" Version="0.1.12" />
+    <PackageReference Include="Touchstone.Core" Version="0.1.12" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PerformanceStatistics\PerformanceStatistics.csproj" />
-    <ProjectReference Include="..\Test.Shared\Test.Shared.csproj" />
   </ItemGroup>
 
 </Project>
