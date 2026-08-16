@@ -118,6 +118,38 @@ namespace Test.Shared.Suites
                     }
                 }),
 
+                Case(Id, "NegativeSourcePortYieldsEmpty", "Filtering by a negative source port yields an empty set (negative)", () =>
+                {
+                    using (IPerformanceStatistics stats = PerformanceStatisticsFactory.Create())
+                    {
+                        // -1 is not a valid TCP port, so no connection can ever match.
+                        TcpConnectionInformation[] filtered = stats.GetActiveTcpConnections(sourcePort: -1);
+                        Check.IsNotNull(filtered, "Filtered result should not be null");
+                        Check.AreEqual(0, filtered.Length, "A negative source port should match nothing");
+                    }
+                }),
+
+                Case(Id, "OutOfRangeDestPortYieldsEmpty", "Filtering by an out-of-range dest port yields an empty set (negative)", () =>
+                {
+                    using (IPerformanceStatistics stats = PerformanceStatisticsFactory.Create())
+                    {
+                        // 70000 exceeds the valid TCP port range (0-65535), so nothing can match.
+                        TcpConnectionInformation[] filtered = stats.GetActiveTcpConnections(destPort: 70000);
+                        Check.IsNotNull(filtered, "Filtered result should not be null");
+                        Check.AreEqual(0, filtered.Length, "An out-of-range dest port should match nothing");
+                    }
+                }),
+
+                Case(Id, "BothInvalidPortsYieldEmpty", "Filtering by both invalid source and dest ports yields an empty set (negative)", () =>
+                {
+                    using (IPerformanceStatistics stats = PerformanceStatisticsFactory.Create())
+                    {
+                        TcpConnectionInformation[] filtered = stats.GetActiveTcpConnections(sourcePort: -1, destPort: 70000);
+                        Check.IsNotNull(filtered, "Filtered result should not be null");
+                        Check.AreEqual(0, filtered.Length, "Two invalid ports should match nothing");
+                    }
+                }),
+
                 Case(Id, "RepeatedEnumerationDoesNotThrow", "Repeated TCP enumeration does not throw", () =>
                 {
                     using (IPerformanceStatistics stats = PerformanceStatisticsFactory.Create())

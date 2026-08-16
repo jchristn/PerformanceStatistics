@@ -161,6 +161,19 @@ namespace Test.Shared.Suites
                     }
                 }),
 
+                Case(Id, "DiskUsedNotGreaterThanTotal", "Used disk space does not exceed total disk size", () =>
+                {
+                    using (IPerformanceStatistics stats = PerformanceStatisticsFactory.Create())
+                    {
+                        double? used = stats.System.TotalDiskUsedMegabytes;
+                        double? total = stats.System.TotalDiskSizeMegabytes;
+                        if (!used.HasValue || !total.HasValue) return;
+                        double tolerance = Math.Max(1.0, total.Value * 0.01);
+                        Check.IsTrue(used.Value <= total.Value + tolerance,
+                            "Used(" + used.Value + ") should not exceed Total(" + total.Value + ")");
+                    }
+                }),
+
                 Case(Id, "SystemToStringNotEmpty", "System counters ToString() returns non-empty text", () =>
                 {
                     using (IPerformanceStatistics stats = PerformanceStatisticsFactory.Create())

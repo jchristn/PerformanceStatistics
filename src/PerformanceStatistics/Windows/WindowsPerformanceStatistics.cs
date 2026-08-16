@@ -146,11 +146,15 @@ namespace PerformanceStatistics.Windows
             sb.Append("--------------------------------------------------" + Environment.NewLine);
             sb.Append("System Counters                 : " + Environment.NewLine);
             sb.Append(((WindowsSystemCounters)System).ToString());
-            sb.Append("Monitored Processes             : " + MonitoredProcesses.Count + Environment.NewLine);
+            // Snapshot volatile collections once: MonitoredProcesses re-queries (and disposes/rebuilds)
+            // on every access, and ActiveTcpConnections re-reads the live TCP table on every access,
+            // so reading .Length and indexing separately can race and throw IndexOutOfRangeException.
+            Dictionary<string, List<IProcessCounters>> monitoredProcesses = MonitoredProcesses;
+            sb.Append("Monitored Processes             : " + monitoredProcesses.Count + Environment.NewLine);
 
-            if (MonitoredProcesses.Count > 0)
+            if (monitoredProcesses.Count > 0)
             {
-                foreach (KeyValuePair<string, List<IProcessCounters>> entry in MonitoredProcesses)
+                foreach (KeyValuePair<string, List<IProcessCounters>> entry in monitoredProcesses)
                 {
                     sb.Append("  " + entry.Key + Environment.NewLine);
 
@@ -168,19 +172,20 @@ namespace PerformanceStatistics.Windows
                 }
             }
 
-            sb.Append("Active TCP Connections          : " + ActiveTcpConnections.Length + Environment.NewLine);
+            TcpConnectionInformation[] activeTcpConnections = ActiveTcpConnections;
+            sb.Append("Active TCP Connections          : " + activeTcpConnections.Length + Environment.NewLine);
 
-            if (ActiveTcpConnections.Length > 0)
+            if (activeTcpConnections.Length > 0)
             {
-                for (int i = 0; i < ActiveTcpConnections.Length; i++)
+                for (int i = 0; i < activeTcpConnections.Length; i++)
                 {
                     sb.Append(
                         "  | " +
-                        ActiveTcpConnections[i].LocalEndPoint.ToString() +
+                        activeTcpConnections[i].LocalEndPoint.ToString() +
                         " to " +
-                        ActiveTcpConnections[i].RemoteEndPoint.ToString() +
+                        activeTcpConnections[i].RemoteEndPoint.ToString() +
                         ": " +
-                        ActiveTcpConnections[i].State.ToString() +
+                        activeTcpConnections[i].State.ToString() +
                         Environment.NewLine);
                 }
             }

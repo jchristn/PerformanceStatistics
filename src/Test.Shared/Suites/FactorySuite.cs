@@ -127,6 +127,14 @@ namespace Test.Shared.Suites
                         Check.IsFalse(ReferenceEquals(a, b), "Each Create() call should return a new instance");
                     }
                 }),
+
+                Case(Id, "IsPlatformSupportedConsistentWithCurrentPlatform", "IsPlatformSupported agrees with CurrentPlatform", () =>
+                {
+                    bool supported = PerformanceStatisticsFactory.IsPlatformSupported;
+                    bool known = PerformanceStatisticsFactory.CurrentPlatform != PlatformTypeEnum.Unknown;
+                    Check.AreEqual(known, supported,
+                        "IsPlatformSupported should be true exactly when CurrentPlatform is a known platform");
+                }),
             };
 
             return new TestSuiteDescriptor(Id, "Factory & Platform Detection", cases);
