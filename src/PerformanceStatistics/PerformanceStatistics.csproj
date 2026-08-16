@@ -6,7 +6,7 @@
 		<DocumentationFile>PerformanceStatistics.xml</DocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title></Title>
-		<Version>2.0.0</Version>
+		<Version>2.0.1</Version>
 		<Authors>Joel Christner</Authors>
 		<Company>Joel Christner</Company>
 		<Description>Cross-platform .NET library for capturing real-time performance statistics. Supports Windows, Linux, and macOS. Monitor CPU, memory, disk, and process metrics with a simple API.</Description>
@@ -18,7 +18,7 @@
 		<RepositoryType>github</RepositoryType>
 		<PackageTags>performance counters</PackageTags>
 		<ApplicationIcon>logo.ico</ApplicationIcon>
-		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
+		<PackageReleaseNotes>Fix IndexOutOfRangeException in ToString() when the active TCP connection table changes during enumeration; dependency updates.</PackageReleaseNotes>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
