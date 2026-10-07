@@ -22,7 +22,9 @@ namespace PerformanceStatistics
         /// <summary>
         /// Performance data for monitored processes.
         /// Key: process name, Value: list of process counters for all instances with that name.
-        /// Refreshes process data on each access; previous process handles are disposed.
+        /// Re-scans process names on each access. A process that is still running keeps the same counter instance
+        /// (refreshed with current values), so CPU is measured between accesses; counters for exited processes or
+        /// removed names are disposed.
         /// </summary>
         Dictionary<string, List<IProcessCounters>> MonitoredProcesses { get; }
 

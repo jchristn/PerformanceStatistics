@@ -1,256 +1,259 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
-using System.Linq;
+using System.Text.RegularExpressions;
+using PerformanceStatistics.Internal;
 
 namespace PerformanceStatistics.Linux
 {
     /// <summary>
-    /// Utility class for parsing Linux /proc filesystem.
+    /// Reads Linux kernel statistics from /proc and /sys. Every method returns false or null instead of throwing.
     /// </summary>
     internal static class ProcFileParser
     {
+        #region Private-Members
+
+        private const string ProcStat = "/proc/stat";
+        private const string ProcMeminfo = "/proc/meminfo";
+        private const string ProcDiskstats = "/proc/diskstats";
+        private const string SysBlock = "/sys/block";
+
+        // Virtual or layered block devices; counting them would double-count I/O already counted on the physical disk.
+        private static readonly string[] _VirtualDevicePrefixes = new string[] { "loop", "ram", "zram", "dm-", "md", "nbd", "sr", "fd" };
+
+        // Whole-disk names, used only when /sys/block is unavailable: sda, vdb, xvda, hda, nvme0n1, mmcblk0.
+        private static readonly Regex _WholeDiskName = new Regex(@"^((s|h|v|xv)d[a-z]+|nvme\d+n\d+|mmcblk\d+)$", RegexOptions.Compiled);
+
+        #endregion
+
+        #region Public-Methods
+
         /// <summary>
-        /// Reads and parses /proc/stat to get CPU statistics.
-        /// Returns (total jiffies, idle jiffies) tuple.
+        /// Read aggregate CPU times from the "cpu" line of /proc/stat.
+        /// Total = user + nice + system + idle + iowait + irq + softirq + steal (guest time is already included in user and nice).
+        /// Idle = idle + iowait.
         /// </summary>
-        public static (long total, long idle)? GetCpuTimes()
+        /// <param name="times">Times in jiffies.</param>
+        /// <returns>True if read.</returns>
+        public static bool TryReadCpuTimes(out CpuTimes times)
         {
+            times = default(CpuTimes);
             try
             {
-                string content = File.ReadAllText("/proc/stat");
-                string[] lines = content.Split('\n');
-
-                foreach (string line in lines)
+                foreach (string line in File.ReadLines(ProcStat))
                 {
-                    if (line.StartsWith("cpu "))
+                    if (!line.StartsWith("cpu ", StringComparison.Ordinal)) continue;
+
+                    string[] parts = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length < 5) return false;
+
+                    ulong total = 0;
+                    ulong idle = 0;
+                    int last = Math.Min(parts.Length - 1, 8);
+                    for (int i = 1; i <= last; i++)
                     {
-                        // Format: cpu user nice system idle iowait irq softirq steal guest guest_nice
-                        string[] parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (parts.Length >= 5)
-                        {
-                            long user = long.Parse(parts[1]);
-                            long nice = long.Parse(parts[2]);
-                            long system = long.Parse(parts[3]);
-                            long idle = long.Parse(parts[4]);
-                            long iowait = parts.Length > 5 ? long.Parse(parts[5]) : 0;
-                            long irq = parts.Length > 6 ? long.Parse(parts[6]) : 0;
-                            long softirq = parts.Length > 7 ? long.Parse(parts[7]) : 0;
-                            long steal = parts.Length > 8 ? long.Parse(parts[8]) : 0;
-
-                            long total = user + nice + system + idle + iowait + irq + softirq + steal;
-                            long idleTotal = idle + iowait;
-
-                            return (total, idleTotal);
-                        }
+                        ulong value;
+                        if (!UInt64.TryParse(parts[i], NumberStyles.None, CultureInfo.InvariantCulture, out value)) return false;
+                        total += value;
+                        if (i == 4 || i == 5) idle += value;
                     }
+
+                    times = new CpuTimes(total, idle);
+                    return true;
                 }
             }
             catch
             {
-                // Ignore errors - file may not exist or be readable
+                // /proc unavailable or unreadable.
             }
 
-            return null;
+            return false;
         }
 
         /// <summary>
-        /// Calculates CPU utilization percentage from two samples.
+        /// Read available memory from /proc/meminfo: MemAvailable (kernel 3.14+), else MemFree + Buffers + Cached.
         /// </summary>
-        public static double CalculateCpuPercent((long total, long idle) prev, (long total, long idle) curr)
+        /// <param name="bytes">Bytes.</param>
+        /// <returns>True if read.</returns>
+        public static bool TryGetAvailableMemoryBytes(out long bytes)
         {
-            long deltaTotal = curr.total - prev.total;
-            long deltaIdle = curr.idle - prev.idle;
+            bytes = 0;
+            Dictionary<string, long> kb = ReadMeminfo();
+            if (kb == null) return false;
 
-            if (deltaTotal == 0) return 0;
+            long value;
+            if (kb.TryGetValue("MemAvailable", out value))
+            {
+                bytes = value * 1024;
+                return true;
+            }
 
-            return 100.0 * (deltaTotal - deltaIdle) / deltaTotal;
+            if (!kb.ContainsKey("MemFree")) return false;
+
+            long buffers, cached;
+            kb.TryGetValue("Buffers", out buffers);
+            kb.TryGetValue("Cached", out cached);
+            bytes = (kb["MemFree"] + buffers + cached) * 1024;
+            return true;
         }
 
         /// <summary>
-        /// Reads /proc/meminfo and returns available memory in KB.
-        /// Uses MemAvailable if present (kernel 3.14+), otherwise MemFree + Buffers + Cached.
+        /// Sum completed reads and writes across physical whole disks from /proc/diskstats.
         /// </summary>
-        public static long? GetAvailableMemoryKb()
+        /// <param name="totals">Totals.</param>
+        /// <returns>True if read.</returns>
+        public static bool TryReadDiskTotals(out DiskIoTotals totals)
         {
+            totals = default(DiskIoTotals);
             try
             {
-                string content = File.ReadAllText("/proc/meminfo");
-                var memInfo = new Dictionary<string, long>();
+                HashSet<string> disks = GetPhysicalDisks();
+                long reads = 0;
+                long writes = 0;
 
-                foreach (string line in content.Split('\n'))
+                foreach (string line in File.ReadLines(ProcDiskstats))
                 {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    // major minor name reads-completed reads-merged sectors-read ms-reading writes-completed ...
+                    string[] parts = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length < 8) continue;
 
-                    string[] parts = line.Split(new[] { ':' }, 2);
-                    if (parts.Length == 2)
-                    {
-                        string key = parts[0].Trim();
-                        string valueStr = parts[1].Trim().Split(' ')[0];
-                        if (long.TryParse(valueStr, out long value))
-                        {
-                            memInfo[key] = value;
-                        }
-                    }
+                    string name = parts[2];
+                    if (disks != null ? !disks.Contains(name) : !_WholeDiskName.IsMatch(name)) continue;
+
+                    long value;
+                    if (Int64.TryParse(parts[3], NumberStyles.None, CultureInfo.InvariantCulture, out value)) reads += value;
+                    if (Int64.TryParse(parts[7], NumberStyles.None, CultureInfo.InvariantCulture, out value)) writes += value;
                 }
 
-                // Prefer MemAvailable (kernel 3.14+)
-                if (memInfo.TryGetValue("MemAvailable", out long memAvailable))
-                {
-                    return memAvailable;
-                }
-
-                // Fallback: MemFree + Buffers + Cached
-                long memFree = memInfo.TryGetValue("MemFree", out long mf) ? mf : 0;
-                long buffers = memInfo.TryGetValue("Buffers", out long b) ? b : 0;
-                long cached = memInfo.TryGetValue("Cached", out long c) ? c : 0;
-
-                return memFree + buffers + cached;
+                totals = new DiskIoTotals(reads, writes);
+                return true;
             }
             catch
             {
-                return null;
+                return false;
             }
         }
 
         /// <summary>
-        /// Parses /proc/diskstats and returns aggregated I/O stats.
+        /// Sum in-flight read and write requests across physical whole disks from /sys/block/&lt;disk&gt;/inflight.
         /// </summary>
-        public static DiskStats? GetDiskStats()
+        /// <param name="reads">In-flight reads.</param>
+        /// <param name="writes">In-flight writes.</param>
+        /// <returns>True if at least one disk was read.</returns>
+        public static bool TryReadInflight(out long reads, out long writes)
         {
-            try
+            reads = 0;
+            writes = 0;
+            HashSet<string> disks = GetPhysicalDisks();
+            if (disks == null) return false;
+
+            bool any = false;
+            foreach (string disk in disks)
             {
-                string content = File.ReadAllText("/proc/diskstats");
-                var stats = new DiskStats();
-
-                foreach (string line in content.Split('\n'))
+                try
                 {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    string[] parts = File.ReadAllText(Path.Combine(SysBlock, disk, "inflight"))
+                        .Split(new char[] { ' ', '\t', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length < 2) continue;
 
-                    string[] parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (parts.Length < 14) continue;
-
-                    string deviceName = parts[2];
-
-                    // Skip loop devices, ram devices, and device mapper partitions
-                    if (deviceName.StartsWith("loop") ||
-                        deviceName.StartsWith("ram") ||
-                        deviceName.StartsWith("dm-") ||
-                        char.IsDigit(deviceName[deviceName.Length - 1]) && !deviceName.StartsWith("nvme"))
-                    {
-                        // Skip partitions (e.g., sda1, sda2) but keep whole disks (e.g., sda)
-                        // Exception: nvme devices like nvme0n1 are whole disks
-                        if (!deviceName.StartsWith("nvme") && char.IsDigit(deviceName[deviceName.Length - 1]))
-                            continue;
-                    }
-
-                    // Field indices (0-based after split):
-                    // 3: reads completed
-                    // 7: writes completed
-                    // 6: time spent reading (ms)
-                    // 10: time spent writing (ms)
-                    // 11: I/Os currently in progress
-
-                    if (long.TryParse(parts[3], out long reads))
-                        stats.ReadsCompleted += reads;
-                    if (long.TryParse(parts[7], out long writes))
-                        stats.WritesCompleted += writes;
-                    if (long.TryParse(parts[6], out long readTime))
-                        stats.ReadTimeMs += readTime;
-                    if (long.TryParse(parts[10], out long writeTime))
-                        stats.WriteTimeMs += writeTime;
-                    if (parts.Length > 11 && long.TryParse(parts[11], out long ioInProgress))
-                        stats.IoInProgress += ioInProgress;
+                    long r, w;
+                    if (!Int64.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out r)) continue;
+                    if (!Int64.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out w)) continue;
+                    reads += r;
+                    writes += w;
+                    any = true;
                 }
-
-                return stats;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Reads /proc/[pid]/stat for process CPU times.
-        /// Returns (utime, stime) in clock ticks.
-        /// </summary>
-        public static (long utime, long stime)? GetProcessCpuTimes(int pid)
-        {
-            try
-            {
-                string content = File.ReadAllText($"/proc/{pid}/stat");
-
-                // Format is complex - the command name (field 2) can contain spaces and parentheses
-                // Find the last ')' to locate end of command name
-                int lastParen = content.LastIndexOf(')');
-                if (lastParen < 0) return null;
-
-                string afterComm = content.Substring(lastParen + 1).Trim();
-                string[] parts = afterComm.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                // After the command name:
-                // Index 0: state
-                // Index 11: utime (field 14 in full stat, 0-indexed from here)
-                // Index 12: stime (field 15 in full stat)
-                if (parts.Length > 12)
+                catch
                 {
-                    if (long.TryParse(parts[11], out long utime) &&
-                        long.TryParse(parts[12], out long stime))
-                    {
-                        return (utime, stime);
-                    }
+                    // Disk removed or file unreadable.
                 }
             }
-            catch
-            {
-                // Process may have exited or permission denied
-            }
 
-            return null;
+            return any;
         }
 
         /// <summary>
-        /// Counts file descriptors for a process via /proc/[pid]/fd.
+        /// Count open file descriptors of a process from /proc/&lt;pid&gt;/fd.
         /// </summary>
+        /// <param name="pid">Process ID.</param>
+        /// <returns>Count, or null if unreadable (exited, or another user's process without privileges).</returns>
         public static int? GetProcessFdCount(int pid)
         {
             try
             {
-                string fdPath = $"/proc/{pid}/fd";
-                if (Directory.Exists(fdPath))
-                {
-                    return Directory.GetFiles(fdPath).Length;
-                }
+                return Directory.GetFileSystemEntries("/proc/" + pid.ToString(CultureInfo.InvariantCulture) + "/fd").Length;
             }
             catch
             {
-                // Permission denied or process exited
+                return null;
             }
+        }
 
-            return null;
+        #endregion
+
+        #region Private-Methods
+
+        private static Dictionary<string, long> ReadMeminfo()
+        {
+            try
+            {
+                Dictionary<string, long> ret = new Dictionary<string, long>(StringComparer.Ordinal);
+                foreach (string line in File.ReadLines(ProcMeminfo))
+                {
+                    // "MemAvailable:   12345678 kB"
+                    int colon = line.IndexOf(':');
+                    if (colon < 1) continue;
+
+                    string[] value = line.Substring(colon + 1).Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    long kb;
+                    if (value.Length > 0 && Int64.TryParse(value[0], NumberStyles.None, CultureInfo.InvariantCulture, out kb))
+                        ret[line.Substring(0, colon).Trim()] = kb;
+                }
+
+                return ret;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>
-        /// Gets clock ticks per second (USER_HZ, typically 100 on Linux).
+        /// Physical whole disks: the entries of /sys/block (which lists whole disks, never partitions)
+        /// minus virtual and layered devices. Null if /sys/block is unavailable.
         /// </summary>
-        public static long GetClockTicksPerSecond()
+        private static HashSet<string> GetPhysicalDisks()
         {
-            // On most Linux systems this is 100 (sysconf(_SC_CLK_TCK))
-            // This is a compile-time constant in the kernel, typically 100
-            return 100;
-        }
-    }
+            try
+            {
+                if (!Directory.Exists(SysBlock)) return null;
 
-    /// <summary>
-    /// Aggregated disk statistics from /proc/diskstats.
-    /// </summary>
-    internal struct DiskStats
-    {
-        public long ReadsCompleted;
-        public long WritesCompleted;
-        public long ReadTimeMs;
-        public long WriteTimeMs;
-        public long IoInProgress;
+                HashSet<string> ret = new HashSet<string>(StringComparer.Ordinal);
+                foreach (string entry in Directory.GetFileSystemEntries(SysBlock))
+                {
+                    string name = Path.GetFileName(entry);
+                    bool isVirtual = false;
+                    foreach (string prefix in _VirtualDevicePrefixes)
+                    {
+                        if (name.StartsWith(prefix, StringComparison.Ordinal))
+                        {
+                            isVirtual = true;
+                            break;
+                        }
+                    }
+
+                    if (!isVirtual) ret.Add(name);
+                }
+
+                return ret;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        #endregion
     }
 }

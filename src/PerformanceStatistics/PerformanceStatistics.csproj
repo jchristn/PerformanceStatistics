@@ -6,11 +6,11 @@
 		<DocumentationFile>PerformanceStatistics.xml</DocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title></Title>
-		<Version>2.0.1</Version>
+		<Version>2.1.0</Version>
 		<Authors>Joel Christner</Authors>
 		<Company>Joel Christner</Company>
 		<Description>Cross-platform .NET library for capturing real-time performance statistics. Supports Windows, Linux, and macOS. Monitor CPU, memory, disk, and process metrics with a simple API.</Description>
-		<Copyright>(c)2023 Joel Christner</Copyright>
+		<Copyright>(c)2026 Joel Christner</Copyright>
 		<PackageProjectUrl>https://github.com/jchristn/PerformanceStatistics</PackageProjectUrl>
 		<PackageIcon>logo.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -18,7 +18,7 @@
 		<RepositoryType>github</RepositoryType>
 		<PackageTags>performance counters</PackageTags>
 		<ApplicationIcon>logo.ico</ApplicationIcon>
-		<PackageReleaseNotes>Fix IndexOutOfRangeException in ToString() when the active TCP connection table changes during enumeration; dependency updates.</PackageReleaseNotes>
+		<PackageReleaseNotes>Consistent cross-platform semantics: shared base classes; process CPU now measured across MonitoredProcesses accesses and normalized to machine capacity everywhere; macOS uses native APIs (accurate available memory, de-duplicated APFS disk space, file descriptor counts, physical footprint); Windows CPU/memory via kernel32 and long-lived disk counters; Linux per-disk in-flight queues and partition-safe disk stats. See CHANGELOG.md.</PackageReleaseNotes>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -45,7 +45,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.11" />
-		<PackageReference Include="System.Text.Json" Version="10.0.11" />
 	</ItemGroup>
 
 	<ItemGroup>

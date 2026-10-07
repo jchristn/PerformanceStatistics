@@ -7,6 +7,8 @@
     <IsPackable>false</IsPackable>
     <AssemblyName>Test.Shared</AssemblyName>
     <RootNamespace>Test.Shared</RootNamespace>
+    <!-- Platform-specific suites construct OS-specific classes behind runtime platform checks. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,254 +1,89 @@
 using System;
 using System.IO;
-using System.Text;
+using System.Runtime.InteropServices;
+using PerformanceStatistics.Internal;
 
 namespace PerformanceStatistics.Linux
 {
     /// <summary>
-    /// Linux system counters using /proc filesystem.
+    /// Linux system counters, read from /proc and /sys.
+    /// <list type="bullet">
+    /// <item>CPU: /proc/stat.</item>
+    /// <item>Memory: /proc/meminfo MemAvailable.</item>
+    /// <item>Disk operations: /proc/diskstats, physical whole disks only.</item>
+    /// <item>Disk queues: in-flight requests from /sys/block/&lt;disk&gt;/inflight.</item>
+    /// <item>Disk space: fixed filesystems, excluding pseudo filesystems; bind mounts are counted once.</item>
+    /// </list>
     /// </summary>
-    public class LinuxSystemCounters : ISystemCounters
+#if NET5_0_OR_GREATER
+    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
+#endif
+    public class LinuxSystemCounters : SystemCountersBase
     {
-        private (long total, long idle)? _previousCpuSample;
-        private DateTime _lastCpuSampleTime;
-        private DiskStats? _previousDiskStats;
-        private DateTime _lastDiskSampleTime;
+        #region Private-Members
+
+        private static readonly string[] _PseudoMountPrefixes = new string[] { "/proc", "/sys", "/dev", "/run", "/snap" };
+
+        #endregion
+
+        #region Constructors-and-Factories
 
         /// <summary>
         /// Instantiate.
         /// </summary>
-        public LinuxSystemCounters()
+        /// <exception cref="PlatformNotSupportedException">Not running on Linux.</exception>
+        public LinuxSystemCounters() : base(OSPlatform.Linux)
         {
         }
 
-        /// <summary>
-        /// CPU utilization percentage.
-        /// Requires two samples to calculate; first call initializes sampling and returns 0.
-        /// </summary>
-        public double? CpuUtilizationPercent
+        #endregion
+
+        #region Internal-Methods
+
+        /// <inheritdoc />
+        internal override bool TryReadCpuTimes(out CpuTimes times)
         {
-            get
-            {
-                var current = ProcFileParser.GetCpuTimes();
-                if (!current.HasValue) return null;
-
-                if (_previousCpuSample.HasValue)
-                {
-                    var elapsed = DateTime.UtcNow - _lastCpuSampleTime;
-                    if (elapsed.TotalMilliseconds > 50) // Minimum sample interval
-                    {
-                        var result = ProcFileParser.CalculateCpuPercent(
-                            _previousCpuSample.Value, current.Value);
-                        _previousCpuSample = current;
-                        _lastCpuSampleTime = DateTime.UtcNow;
-                        return Math.Round(Math.Max(0, Math.Min(100, result)), 0);
-                    }
-                }
-
-                _previousCpuSample = current;
-                _lastCpuSampleTime = DateTime.UtcNow;
-                return 0;
-            }
+            return ProcFileParser.TryReadCpuTimes(out times);
         }
 
-        /// <summary>
-        /// Available memory in megabytes.
-        /// </summary>
-        public double? MemoryFreeMegabytes
+        /// <inheritdoc />
+        internal override bool TryGetAvailableMemoryBytes(out long bytes)
         {
-            get
-            {
-                var kb = ProcFileParser.GetAvailableMemoryKb();
-                return kb.HasValue ? Math.Round(kb.Value / 1024.0, 0) : (double?)null;
-            }
+            return ProcFileParser.TryGetAvailableMemoryBytes(out bytes);
         }
 
-        /// <summary>
-        /// Disk read operations per second.
-        /// Requires two samples to calculate delta.
-        /// </summary>
-        public int? TotalDiskReadOperations
+        /// <inheritdoc />
+        internal override bool TryReadDiskTotals(out DiskIoTotals totals)
         {
-            get
-            {
-                return GetDiskOpsPerSecond(isRead: true);
-            }
+            return ProcFileParser.TryReadDiskTotals(out totals);
         }
 
-        /// <summary>
-        /// Disk write operations per second.
-        /// Requires two samples to calculate delta.
-        /// </summary>
-        public int? TotalDiskWriteOperations
+        /// <inheritdoc />
+        internal override bool TryGetDiskQueues(out double read, out double write)
         {
-            get
-            {
-                return GetDiskOpsPerSecond(isRead: false);
-            }
+            long r, w;
+            bool ok = ProcFileParser.TryReadInflight(out r, out w);
+            read = r;
+            write = w;
+            return ok;
         }
 
-        /// <summary>
-        /// Disk read queue length.
-        /// Approximated from I/O in progress from /proc/diskstats (divided by 2).
-        /// </summary>
-        public int? TotalDiskReadQueue
+        /// <inheritdoc />
+        internal override bool IncludeDrive(DriveInfo drive)
         {
-            get
+            if (drive.DriveType != DriveType.Fixed) return false;
+
+            string name = drive.Name;
+            foreach (string prefix in _PseudoMountPrefixes)
             {
-                var stats = ProcFileParser.GetDiskStats();
-                return stats.HasValue ? (int)Math.Max(0, stats.Value.IoInProgress / 2) : (int?)null;
-            }
-        }
-
-        /// <summary>
-        /// Disk write queue length.
-        /// Approximated from I/O in progress from /proc/diskstats (divided by 2).
-        /// </summary>
-        public int? TotalDiskWriteQueue
-        {
-            get
-            {
-                var stats = ProcFileParser.GetDiskStats();
-                return stats.HasValue ? (int)Math.Max(0, stats.Value.IoInProgress / 2) : (int?)null;
-            }
-        }
-
-        /// <summary>
-        /// Disk free percentage using DriveInfo.
-        /// </summary>
-        public double? TotalDiskFreePercent
-        {
-            get
-            {
-                var (free, total) = GetDiskSpace();
-                if (total == 0) return null;
-                return Math.Round((free / (double)total) * 100, 0);
-            }
-        }
-
-        /// <summary>
-        /// Disk free megabytes using DriveInfo.
-        /// </summary>
-        public double? TotalDiskFreeMegabytes
-        {
-            get
-            {
-                var (free, _) = GetDiskSpace();
-                return Math.Round(free / (1024.0 * 1024.0), 0);
-            }
-        }
-
-        /// <summary>
-        /// Total disk size in megabytes.
-        /// </summary>
-        public double? TotalDiskSizeMegabytes
-        {
-            get
-            {
-                var (_, total) = GetDiskSpace();
-                return Math.Round(total / (1024.0 * 1024.0), 0);
-            }
-        }
-
-        /// <summary>
-        /// Disk used megabytes.
-        /// </summary>
-        public double? TotalDiskUsedMegabytes
-        {
-            get
-            {
-                var (free, total) = GetDiskSpace();
-                return Math.Round((total - free) / (1024.0 * 1024.0), 0);
-            }
-        }
-
-        /// <summary>
-        /// Produce a human-readable object.
-        /// </summary>
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("  CPU Utilization Percent       : " + (CpuUtilizationPercent?.ToString() ?? "N/A") + "%" + Environment.NewLine);
-            sb.Append("  Memory Free (Megabytes)       : " + (MemoryFreeMegabytes?.ToString() ?? "N/A") + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Read Operations    : " + (TotalDiskReadOperations?.ToString() ?? "N/A") + Environment.NewLine);
-            sb.Append("  Total Disk Write Operations   : " + (TotalDiskWriteOperations?.ToString() ?? "N/A") + Environment.NewLine);
-            sb.Append("  Total Disk Read Queue         : " + (TotalDiskReadQueue?.ToString() ?? "N/A") + Environment.NewLine);
-            sb.Append("  Total Disk Write Queue        : " + (TotalDiskWriteQueue?.ToString() ?? "N/A") + Environment.NewLine);
-            sb.Append("  Total Disk Free Percent       : " + (TotalDiskFreePercent?.ToString() ?? "N/A") + "%" + Environment.NewLine);
-            sb.Append("  Total Disk Free Megabytes     : " + (TotalDiskFreeMegabytes?.ToString() ?? "N/A") + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Size Megabytes     : " + (TotalDiskSizeMegabytes?.ToString() ?? "N/A") + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Used Megabytes     : " + (TotalDiskUsedMegabytes?.ToString() ?? "N/A") + "MB" + Environment.NewLine);
-            return sb.ToString();
-        }
-
-        private (long free, long total) GetDiskSpace()
-        {
-            long totalFree = 0;
-            long totalSize = 0;
-
-            try
-            {
-                foreach (var drive in DriveInfo.GetDrives())
-                {
-                    try
-                    {
-                        if (drive.IsReady &&
-                            (drive.DriveType == DriveType.Fixed ||
-                             drive.DriveType == DriveType.Network))
-                        {
-                            // Skip pseudo-filesystems
-                            string name = drive.Name.ToLowerInvariant();
-                            if (name.StartsWith("/proc") ||
-                                name.StartsWith("/sys") ||
-                                name.StartsWith("/dev") ||
-                                name.StartsWith("/run") ||
-                                name.StartsWith("/snap"))
-                            {
-                                continue;
-                            }
-
-                            totalFree += drive.AvailableFreeSpace;
-                            totalSize += drive.TotalSize;
-                        }
-                    }
-                    catch
-                    {
-                        // Skip inaccessible drives
-                    }
-                }
-            }
-            catch
-            {
-                // Ignore errors
+                if (String.Equals(name, prefix, StringComparison.Ordinal)
+                    || name.StartsWith(prefix + "/", StringComparison.Ordinal))
+                    return false;
             }
 
-            return (totalFree, totalSize);
+            return true;
         }
 
-        private int? GetDiskOpsPerSecond(bool isRead)
-        {
-            var current = ProcFileParser.GetDiskStats();
-            if (!current.HasValue) return null;
-
-            if (_previousDiskStats.HasValue)
-            {
-                var elapsed = DateTime.UtcNow - _lastDiskSampleTime;
-                if (elapsed.TotalSeconds > 0.1) // Minimum sample interval
-                {
-                    long delta = isRead
-                        ? current.Value.ReadsCompleted - _previousDiskStats.Value.ReadsCompleted
-                        : current.Value.WritesCompleted - _previousDiskStats.Value.WritesCompleted;
-
-                    _previousDiskStats = current;
-                    _lastDiskSampleTime = DateTime.UtcNow;
-
-                    return (int)Math.Max(0, Math.Round(delta / elapsed.TotalSeconds));
-                }
-            }
-
-            _previousDiskStats = current;
-            _lastDiskSampleTime = DateTime.UtcNow;
-            return 0;
-        }
+        #endregion
     }
 }

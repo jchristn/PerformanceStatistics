@@ -1,180 +1,68 @@
 using System;
 using System.IO;
-using System.Text;
+using System.Runtime.InteropServices;
+using PerformanceStatistics.Internal;
 
 namespace PerformanceStatistics.Mac
 {
     /// <summary>
     /// macOS system counters.
+    /// <list type="bullet">
+    /// <item>CPU: host_statistics(HOST_CPU_LOAD_INFO) tick deltas.</item>
+    /// <item>Memory: hw.memsize minus app, wired, and compressed memory (host_statistics64), as Activity Monitor computes it.</item>
+    /// <item>Disk operations: IOKit block storage driver statistics (via ioreg), with separate read and write counts.</item>
+    /// <item>Disk queues: not exposed by macOS; always null.</item>
+    /// <item>Disk space: the root volume and volumes under /Volumes; APFS volumes sharing a container are counted once.</item>
+    /// </list>
     /// </summary>
-    public class MacSystemCounters : ISystemCounters
+#if NET5_0_OR_GREATER
+    [System.Runtime.Versioning.SupportedOSPlatform("macos")]
+#endif
+    public class MacSystemCounters : SystemCountersBase
     {
+        #region Constructors-and-Factories
+
         /// <summary>
         /// Instantiate.
         /// </summary>
-        public MacSystemCounters()
+        /// <exception cref="PlatformNotSupportedException">Not running on macOS.</exception>
+        public MacSystemCounters() : base(OSPlatform.OSX)
         {
         }
 
-        /// <summary>
-        /// CPU utilization percentage.
-        /// </summary>
-        public double? CpuUtilizationPercent
+        #endregion
+
+        #region Internal-Methods
+
+        /// <inheritdoc />
+        internal override bool TryReadCpuTimes(out CpuTimes times)
         {
-            get
-            {
-                var cpu = MacSystemInfo.GetCpuUtilization();
-                return cpu.HasValue ? Math.Round(cpu.Value, 0) : (double?)null;
-            }
+            return MacSystemInfo.TryReadCpuTimes(out times);
         }
 
-        /// <summary>
-        /// Available memory in megabytes.
-        /// </summary>
-        public double? MemoryFreeMegabytes
+        /// <inheritdoc />
+        internal override bool TryGetAvailableMemoryBytes(out long bytes)
         {
-            get
-            {
-                var bytes = MacSystemInfo.GetAvailableMemoryBytes();
-                return bytes.HasValue ? Math.Round(bytes.Value / (1024.0 * 1024.0), 0) : (double?)null;
-            }
+            return MacSystemInfo.TryGetAvailableMemoryBytes(out bytes);
         }
 
-        /// <summary>
-        /// Disk read operations per second.
-        /// Note: macOS iostat provides combined transfers; this returns half as approximation.
-        /// </summary>
-        public int? TotalDiskReadOperations
+        /// <inheritdoc />
+        internal override bool TryReadDiskTotals(out DiskIoTotals totals)
         {
-            get
-            {
-                var stats = MacSystemInfo.GetDiskStats();
-                return stats.HasValue ? (int)Math.Round(stats.Value.TransfersPerSecond / 2) : (int?)null;
-            }
+            return MacSystemInfo.TryReadDiskTotals(out totals);
         }
 
-        /// <summary>
-        /// Disk write operations per second.
-        /// Note: macOS iostat provides combined transfers; this returns half as approximation.
-        /// </summary>
-        public int? TotalDiskWriteOperations
+        /// <inheritdoc />
+        internal override bool IncludeDrive(DriveInfo drive)
         {
-            get
-            {
-                var stats = MacSystemInfo.GetDiskStats();
-                return stats.HasValue ? (int)Math.Round(stats.Value.TransfersPerSecond / 2) : (int?)null;
-            }
+            // System volumes under /System/Volumes share the root's APFS container, and disk images and
+            // simulator runtimes mount elsewhere; Finder shows "/" plus /Volumes/*, and so do we.
+            if (drive.DriveType != DriveType.Fixed) return false;
+            string name = drive.Name;
+            return String.Equals(name, "/", StringComparison.Ordinal)
+                || name.StartsWith("/Volumes/", StringComparison.Ordinal);
         }
 
-        /// <summary>
-        /// Disk read queue length.
-        /// Not readily available on macOS; returns null.
-        /// </summary>
-        public int? TotalDiskReadQueue => null;
-
-        /// <summary>
-        /// Disk write queue length.
-        /// Not readily available on macOS; returns null.
-        /// </summary>
-        public int? TotalDiskWriteQueue => null;
-
-        /// <summary>
-        /// Disk free percentage using DriveInfo.
-        /// </summary>
-        public double? TotalDiskFreePercent
-        {
-            get
-            {
-                var (free, total) = GetDiskSpace();
-                if (total == 0) return null;
-                return Math.Round((free / (double)total) * 100, 0);
-            }
-        }
-
-        /// <summary>
-        /// Disk free megabytes using DriveInfo.
-        /// </summary>
-        public double? TotalDiskFreeMegabytes
-        {
-            get
-            {
-                var (free, _) = GetDiskSpace();
-                return Math.Round(free / (1024.0 * 1024.0), 0);
-            }
-        }
-
-        /// <summary>
-        /// Total disk size in megabytes.
-        /// </summary>
-        public double? TotalDiskSizeMegabytes
-        {
-            get
-            {
-                var (_, total) = GetDiskSpace();
-                return Math.Round(total / (1024.0 * 1024.0), 0);
-            }
-        }
-
-        /// <summary>
-        /// Disk used megabytes.
-        /// </summary>
-        public double? TotalDiskUsedMegabytes
-        {
-            get
-            {
-                var (free, total) = GetDiskSpace();
-                return Math.Round((total - free) / (1024.0 * 1024.0), 0);
-            }
-        }
-
-        /// <summary>
-        /// Produce a human-readable object.
-        /// </summary>
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("  CPU Utilization Percent       : " + (CpuUtilizationPercent?.ToString() ?? "N/A") + "%" + Environment.NewLine);
-            sb.Append("  Memory Free (Megabytes)       : " + (MemoryFreeMegabytes?.ToString() ?? "N/A") + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Read Operations    : " + (TotalDiskReadOperations?.ToString() ?? "N/A") + Environment.NewLine);
-            sb.Append("  Total Disk Write Operations   : " + (TotalDiskWriteOperations?.ToString() ?? "N/A") + Environment.NewLine);
-            sb.Append("  Total Disk Read Queue         : " + (TotalDiskReadQueue?.ToString() ?? "N/A") + Environment.NewLine);
-            sb.Append("  Total Disk Write Queue        : " + (TotalDiskWriteQueue?.ToString() ?? "N/A") + Environment.NewLine);
-            sb.Append("  Total Disk Free Percent       : " + (TotalDiskFreePercent?.ToString() ?? "N/A") + "%" + Environment.NewLine);
-            sb.Append("  Total Disk Free Megabytes     : " + (TotalDiskFreeMegabytes?.ToString() ?? "N/A") + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Size Megabytes     : " + (TotalDiskSizeMegabytes?.ToString() ?? "N/A") + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Used Megabytes     : " + (TotalDiskUsedMegabytes?.ToString() ?? "N/A") + "MB" + Environment.NewLine);
-            return sb.ToString();
-        }
-
-        private (long free, long total) GetDiskSpace()
-        {
-            long totalFree = 0;
-            long totalSize = 0;
-
-            try
-            {
-                foreach (var drive in DriveInfo.GetDrives())
-                {
-                    try
-                    {
-                        if (drive.IsReady && drive.DriveType == DriveType.Fixed)
-                        {
-                            totalFree += drive.AvailableFreeSpace;
-                            totalSize += drive.TotalSize;
-                        }
-                    }
-                    catch
-                    {
-                        // Skip inaccessible drives
-                    }
-                }
-            }
-            catch
-            {
-                // Ignore errors
-            }
-
-            return (totalFree, totalSize);
-        }
+        #endregion
     }
 }

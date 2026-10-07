@@ -19,13 +19,23 @@ A lightweight cross-platform .NET library for capturing real-time performance st
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| Windows | Full Support | All metrics available via Windows Performance Counters |
-| Linux | Full Support | Metrics from `/proc` filesystem |
-| macOS | Full Support | Metrics via system commands (`top`, `vm_stat`, `iostat`) |
+| Windows | Full Support | Metrics via kernel32 (`GetSystemTimes`, `GlobalMemoryStatusEx`) and PhysicalDisk performance counters |
+| Linux | Full Support | Metrics from `/proc` and `/sys` |
+| macOS | Full Support | Metrics via native APIs (`host_statistics`, `sysctl`, `libproc`) and IOKit statistics |
 
 ## Help, Feedback, Contribute
 
 If you have any issues or feedback, please file an issue here in Github. We'd love to have you help by contributing code for new features, optimization to the existing codebase, ideas for future releases, or fixes!
+
+## New in v2.1.0
+
+- **Consistent semantics on every platform**: shared base classes own sampling, units, rounding, and formatting; platform classes only supply raw readings
+- **Process CPU that works**: running processes keep their counters across `MonitoredProcesses` accesses, so CPU is measured between reads, normalized to 0-100 of machine capacity everywhere
+- **macOS accuracy**: native APIs replace `top`/`vm_stat`/`iostat` (about 10x faster), with correct available memory, de-duplicated APFS disk space, and real file descriptor and memory footprint values
+- **Windows accuracy**: CPU and memory via kernel32, reused disk counters, per-PID process CPU
+- **CI on Windows, Linux, and macOS**
+
+See [CHANGELOG.md](CHANGELOG.md) for fixes and behavior changes.
 
 ## New in v2.0.0
 
@@ -38,7 +48,9 @@ If you have any issues or feedback, please file an issue here in Github. We'd lo
 ## Example Projects
 
 - `Test` - Interactive console application for manual testing
-- `Test.Automated` - Automated test suite with 54 cross-platform tests
+- `Test.Shared` - Touchstone test suites (the single source of truth for tests)
+- `Test.Automated` - Console runner for the shared suites (`dotnet run --project src/Test.Automated -f net10.0`)
+- `Test.Xunit` / `Test.Nunit` - The same suites under `dotnet test`
 
 ## Getting Started
 
@@ -100,7 +112,7 @@ else
 ```csharp
 using var stats = PerformanceStatisticsFactory.Create();
 
-// CPU (note: first call may return 0 as it requires two samples)
+// CPU (average since the previous read; the first read waits ~100ms for a second sample)
 double? cpuPercent = stats.System.CpuUtilizationPercent;
 
 // Memory
@@ -134,7 +146,7 @@ foreach (var kvp in stats.MonitoredProcesses)
         Console.WriteLine($"  CPU: {process.CpuUtilizationPercent ?? 0}%");
         Console.WriteLine($"  Working Set: {process.WorkingSetMemory / (1024 * 1024)} MB");
         Console.WriteLine($"  Threads: {process.ThreadCount}");
-        Console.WriteLine($"  Handles: {process.HandleCount ?? 0}"); // 0 on macOS
+        Console.WriteLine($"  Handles: {process.HandleCount}"); // handles on Windows, file descriptors elsewhere
     }
 }
 ```
@@ -203,22 +215,30 @@ public class PerformanceMonitorService : IHostedService, IDisposable
 }
 ```
 
+## Sampling Semantics
+
+- **Rates are averages since the previous read.** System CPU, disk operations, and process CPU compare the current raw counters with those from the previous read of the same object. Poll on a fixed interval (for example once per second) for steady values.
+- **The first read is measured, not zero.** It waits up to ~100ms for a second sample (on macOS, until the kernel publishes new CPU ticks).
+- **Reads closer than 100ms** return the previous value rather than resetting the measurement, so reading several properties back-to-back is consistent.
+- **Process counters persist.** `MonitoredProcesses` re-scans process names on each access but returns the same `IProcessCounters` instance for a process that is still running, with refreshed memory values. Read it once per polling pass.
+- **Null means unavailable.** A metric the platform does not expose, or a process you lack rights to inspect, returns `null`. Counters never throw from getters.
+
 ## Platform-Specific Metric Availability
 
 ### System Counters
 
-| Metric | Windows | Linux | macOS | Notes |
-|--------|:-------:|:-----:|:-----:|-------|
-| `CpuUtilizationPercent` | ✓ | ✓ | ✓ | First call returns 0 (requires two samples) |
-| `MemoryFreeMegabytes` | ✓ | ✓ | ✓ | |
-| `TotalDiskReadOperations` | ✓ | ✓ | ~approx | macOS: approximated from combined transfers |
-| `TotalDiskWriteOperations` | ✓ | ✓ | ~approx | macOS: approximated from combined transfers |
-| `TotalDiskReadQueue` | ✓ | ~approx | null | Linux: approximated from I/O in progress |
-| `TotalDiskWriteQueue` | ✓ | ~approx | null | Linux: approximated from I/O in progress |
-| `TotalDiskFreePercent` | ✓ | ✓ | ✓ | |
-| `TotalDiskFreeMegabytes` | ✓ | ✓ | ✓ | |
-| `TotalDiskSizeMegabytes` | ✓ | ✓ | ✓ | |
-| `TotalDiskUsedMegabytes` | ✓ | ✓ | ✓ | |
+| Metric | Windows | Linux | macOS | Source |
+|--------|:-------:|:-----:|:-----:|--------|
+| `CpuUtilizationPercent` | ✓ | ✓ | ✓ | `GetSystemTimes` / `/proc/stat` / `host_statistics` |
+| `MemoryFreeMegabytes` | ✓ | ✓ | ✓ | Available physical / `MemAvailable` / memsize minus app+wired+compressed (Activity Monitor) |
+| `TotalDiskReadOperations` | ✓ | ✓ | ✓ | PhysicalDisk counters / `/proc/diskstats` / IOKit block storage statistics |
+| `TotalDiskWriteOperations` | ✓ | ✓ | ✓ | as above |
+| `TotalDiskReadQueue` | ✓ | ✓ | null | Avg. Disk Read Queue Length / `/sys/block/*/inflight` |
+| `TotalDiskWriteQueue` | ✓ | ✓ | null | Avg. Disk Write Queue Length / `/sys/block/*/inflight` |
+| `TotalDiskFreePercent` | ✓ | ✓ | ✓ | Fixed drives; filesystems reporting identical numbers (APFS volumes, bind mounts) counted once |
+| `TotalDiskFreeMegabytes` | ✓ | ✓ | ✓ | as above |
+| `TotalDiskSizeMegabytes` | ✓ | ✓ | ✓ | as above |
+| `TotalDiskUsedMegabytes` | ✓ | ✓ | ✓ | as above |
 
 ### Process Counters
 
@@ -228,23 +248,22 @@ public class PerformanceMonitorService : IHostedService, IDisposable
 | `ProcessName` | ✓ | ✓ | ✓ | |
 | `ProcessTitle` | ✓ | empty | empty | No window concept on Linux/macOS |
 | `MachineName` | ✓ | ✓ | ✓ | |
-| `CpuUtilizationPercent` | ✓ | ✓ | ✓ | First call returns 0 (requires two samples) |
-| `HandleCount` | ✓ | ~fd count | 0 | Linux: counts `/proc/[pid]/fd` entries |
+| `CpuUtilizationPercent` | ✓ | ✓ | ✓ | 0-100 of total machine capacity (all cores) |
+| `HandleCount` | ✓ | ✓ fd | ✓ fd | Linux/macOS: open file descriptors; null for other users' processes |
 | `ThreadCount` | ✓ | ✓ | ✓ | |
-| `PrivateMemory` | ✓ | ✓ | 0 | May return 0 on macOS |
+| `PrivateMemory` | ✓ | ✓ | ✓ | macOS: physical footprint (Activity Monitor "Memory"); null for other users' processes |
 | `VirtualMemory` | ✓ | ✓ | ✓ | |
 | `WorkingSetMemory` | ✓ | ✓ | ✓ | |
 | `NonPagedSystemMemory` | ✓ | null | null | Windows-specific concept |
 | `PagedSystemMemory` | ✓ | null | null | Windows-specific concept |
 | `PeakPagedSystemMemory` | ✓ | null | null | Windows-specific concept |
-| `PeakVirtualSystemMemory` | ✓ | ✓ | ✓ | |
-| `PeakWorkingSetMemory` | ✓ | ✓ | 0 | May return 0 on macOS |
+| `PeakVirtualSystemMemory` | ✓ | ✓ | null | Not tracked by macOS |
+| `PeakWorkingSetMemory` | ✓ | ✓ | null | Not tracked by macOS |
 
 **Legend:**
-- ✓ = Fully supported
-- ~approx = Approximated value
+- ✓ = Supported
+- fd = File descriptor count
 - null = Returns null (metric not available)
-- 0 = Returns 0 (metric not tracked on this platform)
 - empty = Returns empty string
 
 ## API Reference
@@ -289,8 +308,8 @@ public class PerformanceMonitorService : IHostedService, IDisposable
 | `ProcessName` | `string` | Process name |
 | `ProcessTitle` | `string` | Main window title (Windows only) |
 | `MachineName` | `string` | Machine name |
-| `CpuUtilizationPercent` | `double?` | CPU usage percentage for this process |
-| `HandleCount` | `int?` | Number of handles (fd count on Linux, 0 on macOS) |
+| `CpuUtilizationPercent` | `double?` | CPU usage of this process, 0-100 of total machine capacity |
+| `HandleCount` | `int?` | Number of handles (Windows) or open file descriptors (Linux, macOS) |
 | `ThreadCount` | `int?` | Number of threads |
 | `PrivateMemory` | `long?` | Private memory in bytes |
 | `VirtualMemory` | `long?` | Virtual memory in bytes |
@@ -312,16 +331,27 @@ public class PerformanceMonitorService : IHostedService, IDisposable
 
 ## Platform-Specific Namespaces
 
-All platform implementations are organized in their own namespaces and implement the common interfaces:
+All platform implementations derive from shared base classes in the root namespace (`PerformanceStatisticsBase`, `SystemCountersBase`, `ProcessCountersBase`) and implement the common interfaces:
 
-- `PerformanceStatistics.Windows` - Windows implementation using Performance Counters
+- `PerformanceStatistics.Windows` - kernel32 and PhysicalDisk performance counters
   - `WindowsPerformanceStatistics`, `WindowsSystemCounters`, `WindowsProcessCounters`
-- `PerformanceStatistics.Linux` - Linux implementation using `/proc` filesystem
+- `PerformanceStatistics.Linux` - `/proc` and `/sys`
   - `LinuxPerformanceStatistics`, `LinuxSystemCounters`, `LinuxProcessCounters`
-- `PerformanceStatistics.Mac` - macOS implementation using system commands
+- `PerformanceStatistics.Mac` - Mach host statistics, `sysctl`, `libproc`, and IOKit statistics
   - `MacPerformanceStatistics`, `MacSystemCounters`, `MacProcessCounters`
 
-For cross-platform code, use `PerformanceStatisticsFactory.Create()` which returns `IPerformanceStatistics`.
+Constructing another operating system's statistics or system counters throws `PlatformNotSupportedException`. For cross-platform code, use `PerformanceStatisticsFactory.Create()`, which returns `IPerformanceStatistics`.
+
+## Building and Testing
+
+```bash
+dotnet build src/PerformanceStatistics.sln
+dotnet run --project src/Test.Automated -f net10.0   # Touchstone console runner; exit code 0 = all passed
+dotnet test src/Test.Xunit                             # same suites under xUnit
+dotnet test src/Test.Nunit                             # same suites under NUnit
+```
+
+Tests run against the real operating system, so run them on each platform; CI (`.github/workflows/ci.yml`) does this on Windows, Linux, and macOS. Add new tests to `src/Test.Shared/Suites`.
 
 ## Version History
 

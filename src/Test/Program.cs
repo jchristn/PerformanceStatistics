@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Runtime;
-using System.Runtime.InteropServices;
 using GetSomeInput;
 using PerformanceStatistics;
-using PerformanceStatistics.Windows;
 
 namespace Test
 {
     public static class Program
     {
         private static bool _RunForever = true;
-        private static WindowsPerformanceStatistics _Statistics = new WindowsPerformanceStatistics();
+        private static IPerformanceStatistics _Statistics = PerformanceStatisticsFactory.Create();
 
         public static void Main(string[] args)
         {
@@ -46,6 +43,8 @@ namespace Test
                         break;
                 }
             }
+
+            _Statistics.Dispose();
         }
 
         private static void Menu()
@@ -65,38 +64,17 @@ namespace Test
 
         private static void DisplayStats()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Console.WriteLine("");
-                Console.WriteLine(_Statistics.ToString());
-                Console.WriteLine("");
-
-                Console.WriteLine("");
-            }
-            else
-            {
-                Console.WriteLine("");
-                Console.WriteLine("Unsupported platform");
-                Console.WriteLine("");
-            }
+            Console.WriteLine("");
+            Console.WriteLine("Platform: " + PerformanceStatisticsFactory.CurrentPlatform);
+            Console.WriteLine(_Statistics.ToString());
+            Console.WriteLine("");
         }
 
         private static void DisplayJson()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Console.WriteLine("");
-                Console.WriteLine(SerializationHelper.SerializeJson(_Statistics, true));
-                Console.WriteLine("");
-
-                Console.WriteLine("");
-            }
-            else
-            {
-                Console.WriteLine("");
-                Console.WriteLine("Unsupported platform");
-                Console.WriteLine("");
-            }
+            Console.WriteLine("");
+            Console.WriteLine(SerializationHelper.SerializeJson(_Statistics, true));
+            Console.WriteLine("");
         }
 
         private static void CountByPort()

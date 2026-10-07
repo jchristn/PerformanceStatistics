@@ -1,170 +1,38 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
+using PerformanceStatistics.Internal;
 
 namespace PerformanceStatistics.Windows
 {
     /// <summary>
     /// Windows system counters.
+    /// <list type="bullet">
+    /// <item>CPU: GetSystemTimes deltas (independent of the localized performance counter names).</item>
+    /// <item>Memory: GlobalMemoryStatusEx available physical memory.</item>
+    /// <item>Disk operations: cumulative raw values of the PhysicalDisk(_Total) "Disk Reads/sec" and "Disk Writes/sec" counters.</item>
+    /// <item>Disk queues: PhysicalDisk(_Total) "Avg. Disk Read/Write Queue Length", averaged since the previous read (the first read may be 0).</item>
+    /// <item>Disk space: fixed drives.</item>
+    /// </list>
+    /// Performance counters are created on first use and reused; if they are unavailable (disabled or
+    /// corrupted counter registry), the disk operation and queue properties return null.
     /// </summary>
-    public class WindowsSystemCounters : ISystemCounters
+#if NET5_0_OR_GREATER
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+#endif
+    public class WindowsSystemCounters : SystemCountersBase
     {
-        #region Public-Members
-
-        /// <summary>
-        /// CPU utilization percentage.
-        /// </summary>
-        public double? CpuUtilizationPercent
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                using (var counter = new PerformanceCounter("Processor", "% Processor Time", "_Total"))
-                {
-                    return Math.Round(counter.NextValue(), 0);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Memory free in Megabytes.
-        /// </summary>
-        public double? MemoryFreeMegabytes
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                using (var counter = new PerformanceCounter("Memory", "Available MBytes"))
-                {
-                    return Math.Round(counter.NextValue(), 0);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Total disk read operations.
-        /// </summary>
-        public int? TotalDiskReadOperations
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                using (var counter = new PerformanceCounter("LogicalDisk", "Disk Reads/sec", "_Total"))
-                {
-                    return (int)Math.Round(counter.NextValue(), 0);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Total disk write operations.
-        /// </summary>
-        public int? TotalDiskWriteOperations
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                using (var counter = new PerformanceCounter("LogicalDisk", "Disk Writes/sec", "_Total"))
-                {
-                    return (int)Math.Round(counter.NextValue(), 0);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Total disk read queue.
-        /// </summary>
-        public int? TotalDiskReadQueue
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                using (var counter = new PerformanceCounter("LogicalDisk", "Avg. Disk Read Queue Length", "_Total"))
-                {
-                    return (int)Math.Round(counter.NextValue(), 0);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Total disk write queue.
-        /// </summary>
-        public int? TotalDiskWriteQueue
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                using (var counter = new PerformanceCounter("LogicalDisk", "Avg. Disk Write Queue Length", "_Total"))
-                {
-                    return (int)Math.Round(counter.NextValue(), 0);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Total disk free percent.
-        /// </summary>
-        public double? TotalDiskFreePercent
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                using (var counter = new PerformanceCounter("LogicalDisk", "% Free Space", "_Total"))
-                {
-                    return Math.Round(counter.NextValue(), 0);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Total disk free megabytes.
-        /// </summary>
-        public double? TotalDiskFreeMegabytes
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                using (var counter = new PerformanceCounter("LogicalDisk", "Free Megabytes", "_Total"))
-                {
-                    return Math.Round(counter.NextValue(), 0);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Total disk size megabytes.
-        /// </summary>
-        public double? TotalDiskSizeMegabytes
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                var free = TotalDiskFreeMegabytes;
-                var pct = TotalDiskFreePercent;
-                if (!free.HasValue || !pct.HasValue || pct.Value == 0) return null;
-                return Convert.ToDouble(string.Format("{0:N2}", ((free.Value / pct.Value) * 100)));
-            }
-        }
-
-        /// <summary>
-        /// Total disk used megabytes.
-        /// </summary>
-        public double? TotalDiskUsedMegabytes
-        {
-            get
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) throw new NotSupportedException("This library and class are only supported on Windows operating systems.");
-                var size = TotalDiskSizeMegabytes;
-                var free = TotalDiskFreeMegabytes;
-                if (!size.HasValue || !free.HasValue) return null;
-                return Convert.ToDouble(string.Format("{0:N2}", (size.Value - free.Value)));
-            }
-        }
-
-        #endregion
-
         #region Private-Members
+
+        private const string DiskCategory = "PhysicalDisk";
+        private const string TotalInstance = "_Total";
+
+        private readonly object _CounterLock = new object();
+        private bool _CountersInitialized = false;
+        private PerformanceCounter _DiskReads = null;
+        private PerformanceCounter _DiskWrites = null;
+        private PerformanceCounter _DiskReadQueue = null;
+        private PerformanceCounter _DiskWriteQueue = null;
 
         #endregion
 
@@ -173,38 +41,122 @@ namespace PerformanceStatistics.Windows
         /// <summary>
         /// Instantiate.
         /// </summary>
-        public WindowsSystemCounters()
+        /// <exception cref="PlatformNotSupportedException">Not running on Windows.</exception>
+        public WindowsSystemCounters() : base(OSPlatform.Windows)
         {
-
         }
 
         #endregion
 
-        #region Public-Methods
+        #region Internal-and-Protected-Methods
 
-        /// <summary>
-        /// Produce a human-readable object.
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
+        /// <inheritdoc />
+        internal override bool TryReadCpuTimes(out CpuTimes times)
         {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("  CPU Utilization Percent       : " + CpuUtilizationPercent + "%" + Environment.NewLine);
-            sb.Append("  Memory Free (Megabytes)       : " + MemoryFreeMegabytes + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Read Operations    : " + TotalDiskReadOperations + Environment.NewLine);
-            sb.Append("  Total Disk Write Operations   : " + TotalDiskWriteOperations + Environment.NewLine);
-            sb.Append("  Total Disk Read Queue         : " + TotalDiskReadQueue + Environment.NewLine);
-            sb.Append("  Total Disk Write Queue        : " + TotalDiskWriteQueue + Environment.NewLine);
-            sb.Append("  Total Disk Free Percent       : " + TotalDiskFreePercent + "%" + Environment.NewLine);
-            sb.Append("  Total Disk Free Megabytes     : " + TotalDiskFreeMegabytes + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Size Megabytes     : " + TotalDiskSizeMegabytes + "MB" + Environment.NewLine);
-            sb.Append("  Total Disk Used Megabytes     : " + TotalDiskUsedMegabytes + "MB" + Environment.NewLine);
-            return sb.ToString();
+            times = default(CpuTimes);
+            long idle, kernel, user;
+            if (!WindowsNativeMethods.GetSystemTimes(out idle, out kernel, out user)) return false;
+
+            // Kernel time includes idle time.
+            times = new CpuTimes((ulong)(kernel + user), (ulong)idle);
+            return true;
+        }
+
+        /// <inheritdoc />
+        internal override bool TryGetAvailableMemoryBytes(out long bytes)
+        {
+            bytes = 0;
+            WindowsNativeMethods.MEMORYSTATUSEX status = new WindowsNativeMethods.MEMORYSTATUSEX();
+            status.dwLength = (uint)Marshal.SizeOf(typeof(WindowsNativeMethods.MEMORYSTATUSEX));
+            if (!WindowsNativeMethods.GlobalMemoryStatusEx(ref status)) return false;
+            bytes = (long)status.ullAvailPhys;
+            return true;
+        }
+
+        /// <inheritdoc />
+        internal override bool TryReadDiskTotals(out DiskIoTotals totals)
+        {
+            totals = default(DiskIoTotals);
+            lock (_CounterLock)
+            {
+                if (!EnsureCounters() || _DiskReads == null || _DiskWrites == null) return false;
+
+                // Rate counters (PERF_COUNTER_COUNTER) expose the cumulative operation count as RawValue.
+                totals = new DiskIoTotals(_DiskReads.RawValue, _DiskWrites.RawValue);
+                return true;
+            }
+        }
+
+        /// <inheritdoc />
+        internal override bool TryGetDiskQueues(out double read, out double write)
+        {
+            read = 0;
+            write = 0;
+            lock (_CounterLock)
+            {
+                if (!EnsureCounters() || _DiskReadQueue == null || _DiskWriteQueue == null) return false;
+                read = _DiskReadQueue.NextValue();
+                write = _DiskWriteQueue.NextValue();
+                return true;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                lock (_CounterLock)
+                {
+                    _DiskReads?.Dispose();
+                    _DiskWrites?.Dispose();
+                    _DiskReadQueue?.Dispose();
+                    _DiskWriteQueue?.Dispose();
+                    _DiskReads = null;
+                    _DiskWrites = null;
+                    _DiskReadQueue = null;
+                    _DiskWriteQueue = null;
+                }
+            }
+
+            base.Dispose(disposing);
         }
 
         #endregion
 
         #region Private-Methods
+
+        private bool EnsureCounters()
+        {
+            if (_CountersInitialized) return _DiskReads != null || _DiskReadQueue != null;
+            _CountersInitialized = true;
+
+            _DiskReads = CreateCounter("Disk Reads/sec");
+            _DiskWrites = CreateCounter("Disk Writes/sec");
+            _DiskReadQueue = CreateCounter("Avg. Disk Read Queue Length");
+            _DiskWriteQueue = CreateCounter("Avg. Disk Write Queue Length");
+
+            // The first NextValue() of an averaging counter always returns 0; take it now.
+            try { _DiskReadQueue?.NextValue(); } catch { }
+            try { _DiskWriteQueue?.NextValue(); } catch { }
+
+            return _DiskReads != null || _DiskReadQueue != null;
+        }
+
+        private static PerformanceCounter CreateCounter(string counterName)
+        {
+            try
+            {
+                PerformanceCounter counter = new PerformanceCounter(DiskCategory, counterName, TotalInstance, true);
+                // Reading RawValue validates that the category, counter, and instance exist.
+                _ = counter.RawValue;
+                return counter;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         #endregion
     }

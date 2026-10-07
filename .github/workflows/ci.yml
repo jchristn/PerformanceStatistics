@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, ${{ matrix.framework }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        framework: [ net8.0, net10.0 ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Build
+        run: dotnet build src/PerformanceStatistics.sln -c Release
+
+      - name: Test (Touchstone console runner)
+        run: dotnet run --project src/Test.Automated -c Release -f ${{ matrix.framework }} --no-build -- test-results-${{ matrix.os }}-${{ matrix.framework }}.json
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.framework }}
+          path: test-results-${{ matrix.os }}-${{ matrix.framework }}.json
+          if-no-files-found: ignore

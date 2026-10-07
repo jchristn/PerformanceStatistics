@@ -10,7 +10,7 @@ namespace PerformanceStatistics
         /// <summary>
         /// CPU utilization percentage (0-100).
         /// Returns null if the metric is unavailable on this platform.
-        /// Note: May return 0 on first call as CPU calculation requires two samples.
+        /// Averaged over the interval since the previous read; the first read waits briefly for a second sample.
         /// </summary>
         double? CpuUtilizationPercent { get; }
 
@@ -35,14 +35,14 @@ namespace PerformanceStatistics
         /// <summary>
         /// Average disk read queue length.
         /// Returns null if the metric is unavailable on this platform (e.g., macOS).
-        /// Linux provides an approximation from /proc/diskstats.
+        /// Linux reports in-flight requests from /sys/block/&lt;disk&gt;/inflight.
         /// </summary>
         int? TotalDiskReadQueue { get; }
 
         /// <summary>
         /// Average disk write queue length.
         /// Returns null if the metric is unavailable on this platform (e.g., macOS).
-        /// Linux provides an approximation from /proc/diskstats.
+        /// Linux reports in-flight requests from /sys/block/&lt;disk&gt;/inflight.
         /// </summary>
         int? TotalDiskWriteQueue { get; }
 

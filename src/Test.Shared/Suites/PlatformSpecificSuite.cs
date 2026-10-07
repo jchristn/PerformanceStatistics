@@ -99,6 +99,17 @@ namespace Test.Shared.Suites
                         Check.IsTrue(proc.WorkingSetMemory.HasValue && proc.WorkingSetMemory.Value > 0, "WorkingSet should be positive");
                     }
                 }),
+
+                Case(Id, "DiskOperationsAvailable", "WindowsSystemCounters reports disk operations and queues from PhysicalDisk counters", () =>
+                {
+                    using (WindowsSystemCounters sys = new WindowsSystemCounters())
+                    {
+                        Check.IsNotNull(sys.TotalDiskReadOperations, "Disk read operations should be available");
+                        Check.IsNotNull(sys.TotalDiskWriteOperations, "Disk write operations should be available");
+                        Check.IsNotNull(sys.TotalDiskReadQueue, "Disk read queue should be available");
+                        Check.IsNotNull(sys.TotalDiskWriteQueue, "Disk write queue should be available");
+                    }
+                }),
             };
 
             return new TestSuiteDescriptor(Id, "Windows-Specific Implementation", cases);
@@ -160,6 +171,25 @@ namespace Test.Shared.Suites
                         Check.IsNull(proc.PeakPagedSystemMemory, "PeakPagedSystemMemory should be null on Linux");
                     }
                 }),
+
+                Case(Id, "DiskQueuesFromSysBlock", "LinuxSystemCounters reports in-flight disk queues when /sys/block is present", () =>
+                {
+                    if (!System.IO.Directory.Exists("/sys/block")) return;
+                    LinuxSystemCounters sys = new LinuxSystemCounters();
+                    Check.IsNotNull(sys.TotalDiskReadQueue, "Read queue should be available");
+                    Check.IsNotNull(sys.TotalDiskWriteQueue, "Write queue should be available");
+                }),
+
+                Case(Id, "ProcessHandleCountIsFdCount", "LinuxProcessCounters HandleCount is the open file descriptor count", () =>
+                {
+                    using (Process p = Process.GetCurrentProcess())
+                    using (LinuxProcessCounters proc = new LinuxProcessCounters(p))
+                    {
+                        int expected = System.IO.Directory.GetFileSystemEntries("/proc/self/fd").Length;
+                        Check.IsTrue(proc.HandleCount.HasValue, "HandleCount should be available");
+                        Check.IsTrue(Math.Abs(proc.HandleCount.Value - expected) <= 5, "HandleCount " + proc.HandleCount + " vs /proc/self/fd " + expected);
+                    }
+                }),
             };
 
             return new TestSuiteDescriptor(Id, "Linux-Specific Implementation", cases);
@@ -214,14 +244,24 @@ namespace Test.Shared.Suites
                         "Null process should throw ArgumentNullException");
                 }),
 
-                Case(Id, "ProcessHandleCountZero", "MacProcessCounters HandleCount is zero (unavailable)", () =>
+                Case(Id, "ProcessNativeFields", "MacProcessCounters reports descriptors and footprint natively, and null for untracked fields", () =>
                 {
                     using (Process p = Process.GetCurrentProcess())
                     using (MacProcessCounters proc = new MacProcessCounters(p))
                     {
-                        Check.AreEqual(0, proc.HandleCount, "HandleCount is not available on macOS");
+                        Check.IsTrue(proc.HandleCount > 0, "HandleCount is the open file descriptor count");
+                        Check.IsTrue(proc.PrivateMemory > 0, "PrivateMemory is the physical footprint");
                         Check.IsNull(proc.NonPagedSystemMemory, "NonPagedSystemMemory should be null on macOS");
+                        Check.IsNull(proc.PeakWorkingSetMemory, "PeakWorkingSetMemory is not tracked on macOS");
+                        Check.IsNull(proc.PeakVirtualSystemMemory, "PeakVirtualSystemMemory is not tracked on macOS");
                     }
+                }),
+
+                Case(Id, "DiskOperationsAvailable", "MacSystemCounters reports disk operations from IOKit statistics", () =>
+                {
+                    MacSystemCounters sys = new MacSystemCounters();
+                    Check.IsNotNull(sys.TotalDiskReadOperations, "Disk read operations should be available");
+                    Check.IsNotNull(sys.TotalDiskWriteOperations, "Disk write operations should be available");
                 }),
             };
 

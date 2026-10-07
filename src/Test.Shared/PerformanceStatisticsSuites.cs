@@ -27,6 +27,7 @@ namespace Test.Shared
                     TcpConnectionSuite.Build(),
                     DisposalSuite.Build(),
                     EdgeCaseSuite.Build(),
+                    ConsistencySuite.Build(),
                 };
 
                 TestSuiteDescriptor platform = PlatformSpecificSuite.BuildForCurrentPlatform();

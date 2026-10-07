@@ -29,16 +29,16 @@ namespace PerformanceStatistics
         string MachineName { get; }
 
         /// <summary>
-        /// CPU utilization percentage for this process.
+        /// CPU utilization of this process as a percentage (0-100) of total machine capacity (all cores).
         /// Returns null if the metric is unavailable on this platform.
-        /// Note: May return 0 on first call as CPU calculation requires two samples.
+        /// Averaged over the interval since the previous read, or since the counters were created.
         /// </summary>
         double? CpuUtilizationPercent { get; }
 
         /// <summary>
         /// Number of handles.
         /// On Windows, returns the actual handle count.
-        /// On Linux, returns the file descriptor count from /proc/[pid]/fd.
+        /// On Linux and macOS, returns the open file descriptor count (null for other users' processes).
         /// On macOS, returns 0 as this metric is not readily available.
         /// </summary>
         int? HandleCount { get; }
