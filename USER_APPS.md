@@ -5,6 +5,37 @@ A plan for two applications built on the PerformanceStatistics library:
 1. **A terminal app (TUI)** in C#, built on the [TUIKit](https://www.nuget.org/packages/TUIKit) NuGet package.
 2. **A web app**: a React (JavaScript) front end and a C# back-end server, run with Docker Compose.
 
+## Status (2026-10-07)
+
+All five phases are implemented on branch `multiplatform-hardening`. See [docs/TASKMANAGER.md](docs/TASKMANAGER.md) for usage.
+
+| Milestone | State |
+|---|---|
+| 0. Library gaps (v2.2.0) | Done. All-process enumeration with executable path and metadata; per-process disk I/O; per-core CPU; memory totals; swap; per-interface network; volumes; load; `SystemInfo`; `ProcessActions`; `PERFSTATS_HOST_ROOT`. |
+| 1. `PerformanceStatistics.Monitoring` 1.0 | Done. Snapshots, sampler, history buffer, catalog, formatter, accounting, action policy, SQLite store with rollups, client. |
+| 2. TUI | Done. Five tabs, process detail with history, actions, local and `--record` modes, remote `--server` mode. Headless tests. |
+| 3. Server and agent | Done. API, WebSocket stream, auth, audit, agent with offline buffer and local policy; installers for systemd, launchd, and Windows services. End-to-end tests. |
+| 4. Web via Compose | Done. Hosts, Overview, Processes (virtualized, column picker, detail drawer, actions, exited processes), Network, Disks, Accounting (CSV/JSON), Audit; light and dark themes. `docker compose up` verified; Playwright tests. |
+| 5. Parity and accounting | Done, in both apps (Accounting tab; `/accounting` API). |
+| 6. Hardening | Partly done. Auth, action policies, retention and downsampling, and CI on all three OSes are in place. Still open: Windows runs, and the stretch items below. |
+
+**Decisions on the open questions** (from the earlier draft; change them if you prefer otherwise):
+
+- Scope: fleet-capable. A single machine works with the TUI alone, or with one agent.
+- Server: ASP.NET Core minimal APIs.
+- Web-triggered actions: off by default, enabled per agent with `TASKMGR__ALLOWEDACTIONS`, admin only, protected system processes refused, PID-reuse guard, audited.
+- Names: `TaskManager.*` / `taskmgr` (still a placeholder; rename before publishing).
+- Charts: uPlot.
+
+**Not done yet:**
+
+- TCP connections with the owning PID.
+- Per-physical-disk breakdown (totals and per-volume space exist).
+- Per-process network bytes (needs kernel tracing).
+- GPU, temperature, and power.
+- Page faults and context switches per process.
+- Running on Windows: CI covers it, but nothing has been executed on a Windows machine yet.
+
 ## Goal
 
 Task Manager (Windows), Activity Monitor (macOS), and `top`/`htop`/`ps` (Linux) disagree on what they show and how they compute it:

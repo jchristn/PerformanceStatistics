@@ -81,6 +81,14 @@ namespace PerformanceStatistics.Linux
         {
             info.BootTimeUtc = ProcFileParser.GetBootTimeUtc();
             info.CpuModel = ProcFileParser.GetCpuModel();
+
+            // In a container reading the host's /proc, the runtime's OS description is the container image's;
+            // report the host kernel instead.
+            if (ProcFileParser.UsesHostRoot)
+            {
+                string kernel = ProcFileParser.GetKernelRelease();
+                if (kernel != null) info.OperatingSystem = "Linux " + kernel + " (host)";
+            }
         }
 
         /// <inheritdoc />

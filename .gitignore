@@ -340,3 +340,5 @@ paket-files/
 __pycache__/
 *.pyc
  
+# Local compose secrets
+docker/.env

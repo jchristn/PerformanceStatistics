@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: test (${{ matrix.os }}, ${{ matrix.framework }})
+  dotnet:
+    name: dotnet (${{ matrix.os }}, ${{ matrix.framework }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -27,8 +27,15 @@ jobs:
       - name: Build
         run: dotnet build src/PerformanceStatistics.sln -c Release
 
-      - name: Test (Touchstone console runner)
+      - name: Library and monitoring tests (Touchstone)
         run: dotnet run --project src/Test.Automated -c Release -f ${{ matrix.framework }} --no-build -- test-results-${{ matrix.os }}-${{ matrix.framework }}.json
+
+      - name: Terminal UI tests (headless)
+        run: dotnet run --project src/Test.Tui -c Release -f ${{ matrix.framework }} --no-build
+
+      - name: Server and agent end-to-end tests
+        if: matrix.framework == 'net10.0'
+        run: dotnet run --project src/Test.Server -c Release --no-build
 
       - name: Upload results
         if: always()
@@ -37,3 +44,53 @@ jobs:
           name: test-results-${{ matrix.os }}-${{ matrix.framework }}
           path: test-results-${{ matrix.os }}-${{ matrix.framework }}.json
           if-no-files-found: ignore
+
+  web:
+    name: web (unit tests and build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  compose:
+    name: docker compose (stack + browser tests)
+    runs-on: ubuntu-latest
+    needs: [ web ]
+    env:
+      TASKMGR_ADMIN_PASSWORD: ci-admin-pass
+      TASKMGR_AGENT_KEY: ci-agent-key
+      TASKMGR_DOCKER_HOST_ID: ci-host
+      TASKMGR_DOCKER_HOST_ACTIONS: Kill,Suspend,Resume
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the stack with the Linux agent
+        run: docker compose -f docker/compose.yaml --profile linux-agent up -d --build --wait
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Browser tests
+        working-directory: web
+        env:
+          TASKMGR_WEB_URL: http://localhost:3000
+          TASKMGR_E2E_HOST: ci-host
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          for i in $(seq 1 30); do curl -fsS http://localhost:3000/health && break; sleep 2; done
+          npx playwright test
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f docker/compose.yaml --profile linux-agent logs --tail 200
+      - name: Stop the stack
+        if: always()
+        run: docker compose -f docker/compose.yaml --profile linux-agent down -v

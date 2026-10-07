@@ -27,6 +27,23 @@ A lightweight cross-platform .NET library for capturing real-time performance st
 
 If you have any issues or feedback, please file an issue here in Github. We'd love to have you help by contributing code for new features, optimization to the existing codebase, ideas for future releases, or fixes!
 
+## TaskManager apps
+
+This repository also contains **TaskManager**, one task manager for Windows, Linux, and macOS, built on this library:
+
+- **`taskmgr`**: a terminal app built with [TUIKit](https://www.nuget.org/packages/TUIKit).
+- **Server and agents**: agents report from each machine to a server that keeps history.
+- **Web app**: React, run with Docker Compose.
+
+Both front ends show the same processes, columns, and per-platform `n/a` reasons, and chart CPU (total and per core), memory, disk, and network over time.
+
+```bash
+dotnet run --project src/TaskManager.Tui                 # terminal task manager for this machine
+cp docker/.env.example docker/.env && docker compose -f docker/compose.yaml up -d --build   # server + web on :3000
+```
+
+See [docs/TASKMANAGER.md](docs/TASKMANAGER.md) and the plan in [USER_APPS.md](USER_APPS.md).
+
 ## New in v2.2.0
 
 - **Every process, not just named ones**: `GetAllProcesses()` with executable path, command line, user, parent PID, start time, state, priority, CPU time, and disk I/O per process

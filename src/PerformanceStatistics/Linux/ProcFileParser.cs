@@ -295,6 +295,30 @@ namespace PerformanceStatistics.Linux
         }
 
         /// <summary>
+        /// True when reading a host's /proc through PERFSTATS_HOST_ROOT (an agent in a container).
+        /// </summary>
+        public static bool UsesHostRoot
+        {
+            get { return _HostRoot.Length > 0; }
+        }
+
+        /// <summary>
+        /// Kernel release from /proc/sys/kernel/osrelease, or null.
+        /// </summary>
+        /// <returns>Release.</returns>
+        public static string GetKernelRelease()
+        {
+            try
+            {
+                return File.ReadAllText(ProcRoot + "/sys/kernel/osrelease").Trim();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
         /// CPU model from /proc/cpuinfo ("model name", or "Hardware"/"Model" on ARM).
         /// </summary>
         /// <returns>Model or null.</returns>

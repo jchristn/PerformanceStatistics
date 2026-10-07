@@ -1,0 +1,63 @@
+# TaskManager: server (API, history, live stream) and web app.
+#   cp docker/.env.example docker/.env   # set the admin password and agent key
+#   docker compose -f docker/compose.yaml up -d --build
+#   open http://localhost:3000
+# Monitor the Docker host itself too (Linux hosts only):
+#   docker compose -f docker/compose.yaml --profile linux-agent up -d --build
+# Macs and Windows machines run the native agent instead (scripts/agent/*), because containers on
+# Docker Desktop run in a Linux VM and cannot see the host.
+
+name: taskmgr
+
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: docker/server.Dockerfile
+    environment:
+      TASKMGR__ADMINPASSWORD: ${TASKMGR_ADMIN_PASSWORD:?set TASKMGR_ADMIN_PASSWORD in docker/.env}
+      TASKMGR__AGENTKEY: ${TASKMGR_AGENT_KEY:?set TASKMGR_AGENT_KEY in docker/.env}
+      TASKMGR__VIEWERPASSWORD: ${TASKMGR_VIEWER_PASSWORD:-}
+      TASKMGR__STORAGE: /data/taskmgr.db
+    volumes:
+      - taskmgr-data:/data
+    ports:
+      - "${TASKMGR_SERVER_PORT:-8080}:8080"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/web.Dockerfile
+    ports:
+      - "${TASKMGR_WEB_PORT:-3000}:80"
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  agent-linux:
+    profiles: ["linux-agent"]
+    build:
+      context: ..
+      dockerfile: docker/agent.Dockerfile
+    pid: host
+    network_mode: host
+    # Reading other processes' executable paths and I/O counters needs ptrace-level read access.
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    environment:
+      TASKMGR__SERVER: http://localhost:${TASKMGR_SERVER_PORT:-8080}
+      TASKMGR__AGENTKEY: ${TASKMGR_AGENT_KEY}
+      TASKMGR__HOSTID: ${TASKMGR_DOCKER_HOST_ID:-docker-host}
+      TASKMGR__ALLOWEDACTIONS: ${TASKMGR_DOCKER_HOST_ACTIONS:-}
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  taskmgr-data:
