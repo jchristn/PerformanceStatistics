@@ -838,6 +838,17 @@
             </summary>
             <returns>Boot time (UTC) or null.</returns>
         </member>
+        <member name="P:PerformanceStatistics.Linux.ProcFileParser.UsesHostRoot">
+            <summary>
+            True when reading a host's /proc through PERFSTATS_HOST_ROOT (an agent in a container).
+            </summary>
+        </member>
+        <member name="M:PerformanceStatistics.Linux.ProcFileParser.GetKernelRelease">
+            <summary>
+            Kernel release from /proc/sys/kernel/osrelease, or null.
+            </summary>
+            <returns>Release.</returns>
+        </member>
         <member name="M:PerformanceStatistics.Linux.ProcFileParser.GetCpuModel">
             <summary>
             CPU model from /proc/cpuinfo ("model name", or "Hardware"/"Model" on ARM).

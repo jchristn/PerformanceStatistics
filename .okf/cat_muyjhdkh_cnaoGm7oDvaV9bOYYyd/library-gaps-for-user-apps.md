@@ -3,10 +3,12 @@ type: "Project"
 title: "Phase 0 library work for the user apps (target v2.2.0)"
 description: "Add all-process enumeration with executable path and metadata, per-process disk I/O/faults/context switches, per-core CPU, memory totals/swap, per-interface network, per-disk/per-volume detail, load/population/uptime, TCP owning PID, process actions, and a container-aware Linux root."
 timestamp: "2026-10-07T20:47:21.6116730Z"
+status: "deprecated"
 created: "2026-10-07T20:47:20.8624044Z"
 slug: "library-gaps-for-user-apps"
 category: "cat_muyjhdkh_cnaoGm7oDvaV9bOYYyd"
 links: ["user-apps-plan", "user-apps-telemetry-requirements", "namespace-and-folder-layout", "cpu-sampling-model"]
+supersededBy: "mem_muynu3uo_cwMRNTIhYC5A0BJPrED"
 version: "1"
 salience: "0.5"
 ---
