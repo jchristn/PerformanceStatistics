@@ -1,15 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using PerformanceStatistics.Monitoring;
 using TUIKit;
+using TUIKit.Modals;
 using TUIKit.Widgets;
 
 namespace TaskManager.Tui
 {
     /// <summary>
-    /// Chart and text-bar helpers shared by the views.
+    /// Colors, chart panels, and text-bar helpers shared by the views.
     /// </summary>
     internal static class Charts
     {
@@ -26,42 +28,17 @@ namespace TaskManager.Tui
         #region Public-Methods
 
         /// <summary>
-        /// A chart with an optional second series.
+        /// A focusable chart panel that opens a maximized, live <see cref="ChartModal"/> on Enter.
         /// </summary>
-        public static LineChart CreatePair(string primaryName, Color color, double? maximum, string secondName, Color secondColor, out ChartSeries second)
+        public static ChartPanel Panel(string title, MetricUnitEnum unit, Action<Modal> show)
         {
-            LineChart chart = new LineChart(new double[] { 0, 0 });
-            chart.Color = color;
-            chart.PrimaryName = primaryName;
-            chart.Minimum = 0;
-            chart.Maximum = maximum;
-            chart.ShowLegend = secondName != null;
-            second = secondName != null ? chart.AddSeries(secondName, new double[] { 0, 0 }, secondColor) : null;
-            return chart;
+            ChartPanel panel = new ChartPanel(ChartData.Empty(title, unit));
+            panel.Activated += p => show(new ChartModal(() => p.Data));
+            return panel;
         }
 
         /// <summary>
-        /// A single-series chart.
-        /// </summary>
-        public static LineChart Create(string primaryName, Color color, double? maximum)
-        {
-            ChartSeries ignored;
-            return CreatePair(primaryName, color, maximum, null, color, out ignored);
-        }
-
-        /// <summary>
-        /// Ensure a chart always has two points (charts need a line).
-        /// </summary>
-        public static List<double> AtLeastTwo(List<double> values)
-        {
-            if (values.Count >= 2) return values;
-            List<double> ret = new List<double>(values);
-            while (ret.Count < 2) ret.Insert(0, 0);
-            return ret;
-        }
-
-        /// <summary>
-        /// A text bar like "███████░░░ 70.0%" using markup colors by load.
+        /// A text bar like "███████░░░ 70%" using markup colors by load.
         /// </summary>
         public static string Bar(double? percent, int width)
         {
@@ -76,9 +53,6 @@ namespace TaskManager.Tui
             return sb.ToString();
         }
 
-        /// <summary>
-        /// Format a value with a unit, escaped for markup.
-        /// </summary>
         public static string Fmt(double? value, MetricUnitEnum unit)
         {
             return Markup.Escape(MetricFormatter.Format(value, unit));
@@ -92,6 +66,26 @@ namespace TaskManager.Tui
         public static string Fmt(int? value, MetricUnitEnum unit)
         {
             return Fmt(value.HasValue ? (double?)value.Value : null, unit);
+        }
+
+        /// <summary>
+        /// Addresses for a table cell: the first address plus a count of the rest.
+        /// </summary>
+        public static string AddressSummary(List<string> addresses)
+        {
+            if (addresses == null || addresses.Count == 0) return "—";
+
+            // Lead with a routable address (addresses arrive IPv4 first); link-local IPv6 lose their zone suffix here
+            // since the details modal lists every address in full.
+            string first = addresses.FirstOrDefault(a => !a.StartsWith("fe80:", StringComparison.OrdinalIgnoreCase)) ?? addresses[0];
+            int zone = first.IndexOf('%');
+            if (zone > 0)
+            {
+                int slash = first.IndexOf('/', zone);
+                first = first.Substring(0, zone) + (slash > 0 ? first.Substring(slash) : string.Empty);
+            }
+
+            return addresses.Count == 1 ? first : first + "  +" + (addresses.Count - 1).ToString(CultureInfo.InvariantCulture);
         }
 
         #endregion

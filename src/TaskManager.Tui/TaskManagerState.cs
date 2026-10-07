@@ -143,6 +143,49 @@ namespace TaskManager.Tui
         }
 
         /// <summary>
+        /// The last <see cref="WindowSeconds"/> of a series, with timestamps.
+        /// </summary>
+        /// <param name="series">Series.</param>
+        /// <param name="intervalSeconds">Sampling interval.</param>
+        /// <returns>Points.</returns>
+        public List<SeriesPoint> WindowPoints(List<SeriesPoint> series, double intervalSeconds)
+        {
+            int points = (int)Math.Max(2, WindowSeconds / Math.Max(0.25, intervalSeconds));
+            return series.Skip(Math.Max(0, series.Count - points)).ToList();
+        }
+
+        /// <summary>
+        /// Sampling interval of the latest snapshot (1 second before the first interval is known).
+        /// </summary>
+        public double Interval
+        {
+            get { return Latest != null && Latest.IntervalSeconds > 0 ? Latest.IntervalSeconds : 1; }
+        }
+
+        /// <summary>
+        /// Build chart data from history series over the current window.
+        /// </summary>
+        /// <param name="title">Title.</param>
+        /// <param name="unit">Unit.</param>
+        /// <param name="maximum">Fixed axis maximum, or null.</param>
+        /// <param name="series">(name, color, full history series).</param>
+        /// <returns>Chart data.</returns>
+        public ChartData Chart(string title, MetricUnitEnum unit, double? maximum, params (string Name, TUIKit.Color Color, List<SeriesPoint> Points)[] series)
+        {
+            ChartData data = new ChartData { Title = title, Unit = unit, FixedMaximum = maximum };
+            List<SeriesPoint> first = null;
+            foreach ((string Name, TUIKit.Color Color, List<SeriesPoint> Points) s in series)
+            {
+                List<SeriesPoint> window = WindowPoints(s.Points, Interval);
+                if (first == null) first = window;
+                data.Series.Add(new ChartSeriesData { Name = s.Name, Color = s.Color, Values = window.Select(p => p.Value ?? 0).ToArray() });
+            }
+
+            data.Times = (first ?? new List<SeriesPoint>()).Select(p => p.TimestampUtc).ToArray();
+            return data;
+        }
+
+        /// <summary>
         /// The "n/a" reason for a metric on this host's platform, or null if fully available.
         /// </summary>
         /// <param name="metricId">Metric ID.</param>

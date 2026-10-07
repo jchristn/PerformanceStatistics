@@ -5,6 +5,7 @@ using System.Linq;
 using PerformanceStatistics.Monitoring;
 using TUIKit;
 using TUIKit.Layout;
+using TUIKit.Modals;
 using TUIKit.Widgets;
 
 namespace TaskManager.Tui
@@ -43,16 +44,15 @@ namespace TaskManager.Tui
 
         private readonly TaskManagerState _State;
         private readonly DefinitionList _Details = new DefinitionList();
-        private readonly LineChart _CpuChart;
-        private readonly LineChart _MemoryChart;
-        private readonly LineChart _DiskChart;
-        private readonly ChartSeries _DiskWrite;
+        private readonly ChartPanel _CpuChart;
+        private readonly ChartPanel _MemoryChart;
+        private readonly ChartPanel _DiskChart;
 
         #endregion
 
         #region Constructors-and-Factories
 
-        public ProcessesView(TaskManagerState state)
+        public ProcessesView(TaskManagerState state, Action<Modal> show)
         {
             _State = state;
             FilterField = new TextField { Placeholder = "Filter by PID, name, user, path, or command line" };
@@ -102,9 +102,18 @@ namespace TaskManager.Tui
                 UpdateDetails();
             };
 
-            _CpuChart = Charts.Create("CPU %", Charts.Cpu, null);
-            _MemoryChart = Charts.Create("Memory", Charts.Memory, null);
-            _DiskChart = Charts.CreatePair("Read", Charts.Read, null, "Write", Charts.Write, out _DiskWrite);
+            // Enter on a row opens live details for that process.
+            Table.RowActivated += index =>
+            {
+                ProcessSnapshot row = Table.SelectedRow;
+                if (row == null) return;
+                string key = row.Key;
+                show(new DetailsModal(row.Name + " (PID " + row.Pid.ToString(CultureInfo.InvariantCulture) + ")", () => Details.Process(_State, key)));
+            };
+
+            _CpuChart = Charts.Panel("Process CPU %", MetricUnitEnum.Percent, show);
+            _MemoryChart = Charts.Panel("Process memory (resident)", MetricUnitEnum.Bytes, show);
+            _DiskChart = Charts.Panel("Process disk I/O", MetricUnitEnum.BytesPerSecond, show);
 
             FramedStack charts = new FramedStack(SplitOrientation.Vertical)
                 .Add(_CpuChart, StackSize.Weighted(1, 3), "CPU %")
@@ -178,12 +187,13 @@ namespace TaskManager.Tui
                 _Details.Set(MetricCatalog.Get(id).Name, text);
             }
 
-            double interval = _State.Latest != null && _State.Latest.IntervalSeconds > 0 ? _State.Latest.IntervalSeconds : 1;
             HistoryBuffer h = _State.History;
-            _CpuChart.SetValues(Charts.AtLeastTwo(_State.Window(h.GetProcessSeries(p.Key, MetricIds.ProcessCpu), interval)));
-            _MemoryChart.SetValues(Charts.AtLeastTwo(_State.Window(h.GetProcessSeries(p.Key, MetricIds.ProcessWorkingSet), interval)));
-            _DiskChart.SetValues(Charts.AtLeastTwo(_State.Window(h.GetProcessSeries(p.Key, MetricIds.ProcessDiskRead), interval)));
-            _DiskWrite.SetValues(Charts.AtLeastTwo(_State.Window(h.GetProcessSeries(p.Key, MetricIds.ProcessDiskWrite), interval)));
+            string title = " " + p.Name + " (" + p.Pid.ToString(CultureInfo.InvariantCulture) + ")";
+            _CpuChart.Update(_State.Chart("CPU %" + title, MetricUnitEnum.Percent, null, ("CPU", Charts.Cpu, h.GetProcessSeries(p.Key, MetricIds.ProcessCpu))));
+            _MemoryChart.Update(_State.Chart("Memory (resident)" + title, MetricUnitEnum.Bytes, null, ("Memory", Charts.Memory, h.GetProcessSeries(p.Key, MetricIds.ProcessWorkingSet))));
+            _DiskChart.Update(_State.Chart("Disk I/O" + title, MetricUnitEnum.BytesPerSecond, null,
+                ("Read", Charts.Read, h.GetProcessSeries(p.Key, MetricIds.ProcessDiskRead)),
+                ("Write", Charts.Write, h.GetProcessSeries(p.Key, MetricIds.ProcessDiskWrite))));
         }
 
         private string Display(string value, string metricId)

@@ -67,7 +67,9 @@ Supported RIDs are `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`
 | Keys | Action |
 |---|---|
 | `1`–`5` | Switch tabs: Overview, Processes, Network, Disks, Accounting |
-| `Tab` | Move focus between panels |
+| `Tab` | Move focus between panels, including each chart. The focused chart shows `Enter: maximize`. |
+| `Enter` on a chart | Maximize it to fill the screen, with a legend (latest and peak), a labeled Y axis, and time on the X axis. `Enter` or `Esc` restores it. |
+| `Enter` on a row | Details in a live modal: a process (identity, path, command line, every metric with n/a reasons, CPU/memory/disk charts), a network interface (type, MAC, every IPv4/IPv6 address, throughput and packet charts), a TCP connection, a volume, an accounting group, or the Overview's core/memory panels (system details). `Esc` closes it; `↑` `↓` `PgUp` `PgDn` scroll. |
 | `/` | Filter processes by PID, name, user, path, or command line. `Esc` returns to the table. |
 | `c` `m` `d` `n` | Sort by CPU, memory, disk, or name (or click a column header) |
 | `k` | Kill the selected process |

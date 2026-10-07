@@ -81,11 +81,12 @@ namespace TaskManager.Tui
 
             _Header = _App.AddPane("header", region => region.TopAnchored(0, 3).FillWidth().WithPadding(0));
 
-            _Overview = new OverviewView();
-            _Processes = new ProcessesView(State);
-            _Network = new NetworkView(State);
-            _Disks = new DisksView(State);
-            _Accounting = new AccountingView(State);
+            Action<Modal> show = modal => _ = _App.ShowAsync(modal);
+            _Overview = new OverviewView(State, show);
+            _Processes = new ProcessesView(State, show);
+            _Network = new NetworkView(State, show);
+            _Disks = new DisksView(State, show);
+            _Accounting = new AccountingView(State, show);
 
             // Forward keys so arrows, typing, and Tab reach the active tab's content (the table, the filter).
             Tabs = new TabView { ForwardKeys = true };
@@ -105,6 +106,7 @@ namespace TaskManager.Tui
             _App.BindKeyHints(footer)
                 .AddAppHint("?", "Help")
                 .AddAppHint("1", "Tabs 1-5")
+                .AddAppHint("enter", "Details/Maximize")
                 .AddAppHint("/", "Filter")
                 .AddAppHint("k", "Kill")
                 .AddAppHint("p", "Priority")
@@ -145,7 +147,7 @@ namespace TaskManager.Tui
         {
             switch (Tabs.ActiveIndex)
             {
-                case 0: _Overview.Update(State); break;
+                case 0: _Overview.Update(); break;
                 case 1: _Processes.Update(); break;
                 case 2: _Network.Update(); break;
                 case 3: _Disks.Update(); break;
@@ -329,7 +331,10 @@ namespace TaskManager.Tui
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("1-5        Overview, Processes, Network, Disks, Accounting");
-            sb.AppendLine("Tab        Move focus between panels");
+            sb.AppendLine("Tab        Move focus between panels (charts, tables, panes)");
+            sb.AppendLine("Enter      On a chart: maximize with axes (Enter/Esc restores)");
+            sb.AppendLine("           On a process, interface, connection, volume, or");
+            sb.AppendLine("           accounting row, or an Overview pane: details");
             sb.AppendLine("/          Filter processes (PID, name, user, path, command line)");
             sb.AppendLine("c m d n    Sort processes by CPU, memory, disk, name (or click a header)");
             sb.AppendLine("k / t      Kill the selected process / its whole tree");

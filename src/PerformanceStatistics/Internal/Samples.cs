@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace PerformanceStatistics.Internal
 {
@@ -164,5 +165,20 @@ namespace PerformanceStatistics.Internal
         /// Packets sent, or null if not reported.
         /// </summary>
         public long? SentPackets;
+
+        /// <summary>
+        /// Unicast addresses in CIDR form (e.g. "192.168.1.10/24", "fe80::1%en0/64").
+        /// </summary>
+        public List<string> Addresses;
+
+        /// <summary>
+        /// MAC address as colon-separated hex, or empty.
+        /// </summary>
+        public string MacAddress;
+
+        /// <summary>
+        /// Interface type, e.g. "Ethernet" or "Wireless80211".
+        /// </summary>
+        public string InterfaceType;
     }
 }

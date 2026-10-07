@@ -1,17 +1,18 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
+using System.Text;
 using PerformanceStatistics.Monitoring;
 using TUIKit;
 using TUIKit.Content;
 using TUIKit.Layout;
+using TUIKit.Modals;
 using TUIKit.Widgets;
 
 namespace TaskManager.Tui
 {
     /// <summary>
-    /// Overview tab: CPU (total and per core), memory, disk I/O, and network over time.
+    /// Overview tab: CPU (total and per core), memory, disk I/O, and network over time. Tab moves between panels;
+    /// Enter maximizes a chart or opens system details from the text panels.
     /// </summary>
     internal sealed class OverviewView
     {
@@ -23,26 +24,28 @@ namespace TaskManager.Tui
 
         #region Private-Members
 
-        private readonly LineChart _Cpu;
-        private readonly Pane _Cores = new Pane("cores");
-        private readonly LineChart _Memory;
-        private readonly ChartSeries _Swap;
-        private readonly Pane _MemoryText = new Pane("memory-text");
-        private readonly LineChart _Disk;
-        private readonly ChartSeries _DiskWrite;
-        private readonly LineChart _Network;
-        private readonly ChartSeries _NetworkTx;
+        private readonly TaskManagerState _State;
+        private readonly ChartPanel _Cpu;
+        private readonly FocusPane _Cores = new FocusPane("cores", "system details");
+        private readonly ChartPanel _Memory;
+        private readonly FocusPane _MemoryText = new FocusPane("memory-text", "system details");
+        private readonly ChartPanel _Disk;
+        private readonly ChartPanel _Network;
 
         #endregion
 
         #region Constructors-and-Factories
 
-        public OverviewView()
+        public OverviewView(TaskManagerState state, Action<Modal> show)
         {
-            _Cpu = Charts.Create("CPU %", Charts.Cpu, 100);
-            _Memory = Charts.CreatePair("Used", Charts.Memory, null, "Swap", Charts.Swap, out _Swap);
-            _Disk = Charts.CreatePair("Read", Charts.Read, null, "Write", Charts.Write, out _DiskWrite);
-            _Network = Charts.CreatePair("Received", Charts.Read, null, "Sent", Charts.Write, out _NetworkTx);
+            _State = state;
+            _Cpu = Charts.Panel("CPU utilization", MetricUnitEnum.Percent, show);
+            _Memory = Charts.Panel("Memory and swap in use", MetricUnitEnum.Bytes, show);
+            _Disk = Charts.Panel("Disk I/O", MetricUnitEnum.BytesPerSecond, show);
+            _Network = Charts.Panel("Network", MetricUnitEnum.BytesPerSecond, show);
+            Action details = () => show(new DetailsModal("System", () => Details.System(_State)));
+            _Cores.Activated += details;
+            _MemoryText.Activated += details;
 
             FramedStack top = new FramedStack(SplitOrientation.Horizontal)
                 .Add(_Cpu, StackSize.Weighted(3), "CPU utilization (%)")
@@ -64,62 +67,65 @@ namespace TaskManager.Tui
 
         #region Public-Methods
 
-        public void Update(TaskManagerState state)
+        public void Update()
         {
-            HostSnapshot s = state.Latest;
+            HostSnapshot s = _State.Latest;
             if (s == null) return;
-            double interval = s.IntervalSeconds > 0 ? s.IntervalSeconds : 1;
-            HistoryBuffer h = state.History;
+            HistoryBuffer h = _State.History;
+            SystemSnapshot sys = s.System;
 
-            _Cpu.SetValues(Charts.AtLeastTwo(state.Window(h.GetSystemSeries(MetricIds.SystemCpu), interval)));
-            _Memory.SetValues(Charts.AtLeastTwo(state.Window(h.GetSystemSeries(MetricIds.SystemMemoryUsed), interval)));
-            _Swap.SetValues(Charts.AtLeastTwo(state.Window(h.GetSystemSeries(MetricIds.SystemSwapUsed), interval)));
-            _Memory.Maximum = s.System.MemoryTotalBytes;
-            _Disk.SetValues(Charts.AtLeastTwo(state.Window(h.GetSystemSeries(MetricIds.SystemDiskReadBytes), interval)));
-            _DiskWrite.SetValues(Charts.AtLeastTwo(state.Window(h.GetSystemSeries(MetricIds.SystemDiskWriteBytes), interval)));
-            _Network.SetValues(Charts.AtLeastTwo(state.Window(h.GetSystemSeries(MetricIds.SystemNetworkRx), interval)));
-            _NetworkTx.SetValues(Charts.AtLeastTwo(state.Window(h.GetSystemSeries(MetricIds.SystemNetworkTx), interval)));
+            _Cpu.Update(_State.Chart("CPU utilization", MetricUnitEnum.Percent, 100, ("CPU", Charts.Cpu, h.GetSystemSeries(MetricIds.SystemCpu))));
+            _Memory.Update(_State.Chart("Memory and swap in use", MetricUnitEnum.Bytes, sys.MemoryTotalBytes,
+                ("Used", Charts.Memory, h.GetSystemSeries(MetricIds.SystemMemoryUsed)),
+                ("Swap", Charts.Swap, h.GetSystemSeries(MetricIds.SystemSwapUsed))));
+            _Disk.Update(_State.Chart("Disk I/O", MetricUnitEnum.BytesPerSecond, null,
+                ("Read", Charts.Read, h.GetSystemSeries(MetricIds.SystemDiskReadBytes)),
+                ("Write", Charts.Write, h.GetSystemSeries(MetricIds.SystemDiskWriteBytes))));
+            _Network.Update(_State.Chart("Network", MetricUnitEnum.BytesPerSecond, null,
+                ("Received", Charts.Read, h.GetSystemSeries(MetricIds.SystemNetworkRx)),
+                ("Sent", Charts.Write, h.GetSystemSeries(MetricIds.SystemNetworkTx))));
 
-            _Cores.Clear();
-            double[] cores = s.System.PerCoreCpuPercent ?? new double[0];
-            _Cores.WriteMarkup("[bold]Total[/] " + Charts.Bar(s.System.CpuPercent, 14));
+            Pane cores = _Cores.Pane;
+            cores.Clear();
+            double[] perCore = sys.PerCoreCpuPercent ?? new double[0];
+            cores.WriteMarkup("[bold]Total[/] " + Charts.Bar(sys.CpuPercent, 14));
 
             // Lay cores out in columns so many-core machines fit without scrolling.
-            int columns = cores.Length > 48 ? 4 : cores.Length > 24 ? 3 : cores.Length > 12 ? 2 : 1;
+            int columns = perCore.Length > 48 ? 4 : perCore.Length > 24 ? 3 : perCore.Length > 12 ? 2 : 1;
             int barWidth = columns >= 3 ? 5 : columns == 2 ? 8 : 14;
-            int rows = (cores.Length + columns - 1) / columns;
+            int rows = (perCore.Length + columns - 1) / columns;
             for (int r = 0; r < rows; r++)
             {
-                System.Text.StringBuilder line = new System.Text.StringBuilder();
+                StringBuilder line = new StringBuilder();
                 for (int c = 0; c < columns; c++)
                 {
                     int i = c * rows + r;
-                    if (i >= cores.Length) break;
+                    if (i >= perCore.Length) break;
                     if (c > 0) line.Append("  ");
-                    line.Append("[dim]").Append(("#" + i.ToString(CultureInfo.InvariantCulture)).PadRight(4)).Append("[/]").Append(Charts.Bar(cores[i], barWidth));
+                    line.Append("[dim]").Append(("#" + i.ToString(CultureInfo.InvariantCulture)).PadRight(4)).Append("[/]").Append(Charts.Bar(perCore[i], barWidth));
                 }
 
-                _Cores.WriteMarkup(line.ToString());
+                cores.WriteMarkup(line.ToString());
             }
 
-            _Cores.ScrollUp(10000);
+            cores.ScrollUp(10000);
 
-            SystemSnapshot sys = s.System;
             double? memPct = sys.MemoryTotalBytes > 0 && sys.MemoryUsedBytes.HasValue ? 100.0 * sys.MemoryUsedBytes.Value / sys.MemoryTotalBytes.Value : (double?)null;
             double? swapPct = sys.SwapTotalBytes > 0 && sys.SwapUsedBytes.HasValue ? 100.0 * sys.SwapUsedBytes.Value / sys.SwapTotalBytes.Value : (double?)null;
-            _MemoryText.Clear();
-            _MemoryText.WriteMarkup("[bold]Memory[/]    " + Charts.Bar(memPct, 14));
-            _MemoryText.WriteMarkup("  used " + Charts.Fmt(sys.MemoryUsedBytes, MetricUnitEnum.Bytes) + " of " + Charts.Fmt(sys.MemoryTotalBytes, MetricUnitEnum.Bytes) + ", available " + Charts.Fmt(sys.MemoryAvailableBytes, MetricUnitEnum.Bytes));
-            _MemoryText.WriteMarkup("[bold]Swap[/]      " + Charts.Bar(swapPct, 14));
-            _MemoryText.WriteMarkup("  used " + Charts.Fmt(sys.SwapUsedBytes, MetricUnitEnum.Bytes) + " of " + Charts.Fmt(sys.SwapTotalBytes, MetricUnitEnum.Bytes));
+            Pane text = _MemoryText.Pane;
+            text.Clear();
+            text.WriteMarkup("[bold]Memory[/]    " + Charts.Bar(memPct, 14));
+            text.WriteMarkup("  used " + Charts.Fmt(sys.MemoryUsedBytes, MetricUnitEnum.Bytes) + " of " + Charts.Fmt(sys.MemoryTotalBytes, MetricUnitEnum.Bytes) + ", available " + Charts.Fmt(sys.MemoryAvailableBytes, MetricUnitEnum.Bytes));
+            text.WriteMarkup("[bold]Swap[/]      " + Charts.Bar(swapPct, 14));
+            text.WriteMarkup("  used " + Charts.Fmt(sys.SwapUsedBytes, MetricUnitEnum.Bytes) + " of " + Charts.Fmt(sys.SwapTotalBytes, MetricUnitEnum.Bytes));
             string load = sys.LoadAverage1.HasValue
                 ? Charts.Fmt(sys.LoadAverage1, MetricUnitEnum.Count) + " / " + Charts.Fmt(sys.LoadAverage5, MetricUnitEnum.Count) + " / " + Charts.Fmt(sys.LoadAverage15, MetricUnitEnum.Count)
-                : "[dim]n/a (" + Markup.Escape(state.Unavailable(MetricIds.SystemLoad1) ?? "unavailable") + ")[/]";
-            _MemoryText.WriteMarkup("[bold]Load[/]      " + load);
-            _MemoryText.WriteMarkup("[bold]Processes[/] " + Charts.Fmt(sys.ProcessCount, MetricUnitEnum.Count) + "   [bold]Threads[/] " + Charts.Fmt(sys.ThreadCount, MetricUnitEnum.Count) + "   [bold]Handles[/] " + Charts.Fmt(sys.HandleCount, MetricUnitEnum.Count));
-            _MemoryText.WriteMarkup("[bold]Disk[/]      rd " + Charts.Fmt(sys.DiskReadBytesPerSecond, MetricUnitEnum.BytesPerSecond) + "  wr " + Charts.Fmt(sys.DiskWriteBytesPerSecond, MetricUnitEnum.BytesPerSecond));
-            _MemoryText.WriteMarkup("[bold]Network[/]   rx " + Charts.Fmt(sys.NetworkReceivedBytesPerSecond, MetricUnitEnum.BytesPerSecond) + "  tx " + Charts.Fmt(sys.NetworkSentBytesPerSecond, MetricUnitEnum.BytesPerSecond));
-            _MemoryText.ScrollUp(10000);
+                : "[dim]n/a (" + Markup.Escape(_State.Unavailable(MetricIds.SystemLoad1) ?? "unavailable") + ")[/]";
+            text.WriteMarkup("[bold]Load[/]      " + load);
+            text.WriteMarkup("[bold]Processes[/] " + Charts.Fmt(sys.ProcessCount, MetricUnitEnum.Count) + "   [bold]Threads[/] " + Charts.Fmt(sys.ThreadCount, MetricUnitEnum.Count) + "   [bold]Handles[/] " + Charts.Fmt(sys.HandleCount, MetricUnitEnum.Count));
+            text.WriteMarkup("[bold]Disk[/]      rd " + Charts.Fmt(sys.DiskReadBytesPerSecond, MetricUnitEnum.BytesPerSecond) + "  wr " + Charts.Fmt(sys.DiskWriteBytesPerSecond, MetricUnitEnum.BytesPerSecond));
+            text.WriteMarkup("[bold]Network[/]   rx " + Charts.Fmt(sys.NetworkReceivedBytesPerSecond, MetricUnitEnum.BytesPerSecond) + "  tx " + Charts.Fmt(sys.NetworkSentBytesPerSecond, MetricUnitEnum.BytesPerSecond));
+            text.ScrollUp(10000);
         }
 
         #endregion

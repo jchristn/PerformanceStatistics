@@ -64,7 +64,7 @@ namespace Test.Tui
             s.System.ProcessCount = processes.Length;
             s.System.UptimeSeconds = 3700;
             s.Processes = new List<ProcessSnapshot>(processes);
-            s.Network.Add(new NetworkInterfaceSnapshot { Name = "eth0", Description = "Fake NIC", ReceivedBytesPerSecond = 5000, SentBytesPerSecond = 7000, SpeedBitsPerSecond = 1000000000 });
+            s.Network.Add(new NetworkInterfaceSnapshot { Name = "eth0", Description = "Fake NIC", ReceivedBytesPerSecond = 5000, SentBytesPerSecond = 7000, SpeedBitsPerSecond = 1000000000, MacAddress = "02:00:00:aa:bb:cc", InterfaceType = "Ethernet", Addresses = new List<string> { "10.0.0.1/24", "192.168.1.5/24", "fe80::1/64" } });
             s.Volumes.Add(new VolumeSnapshot { Name = "/", Format = "ext4", TotalBytes = 100L << 30, FreeBytes = 40L << 30, UsedBytes = 60L << 30 });
             s.TcpConnections.Add(new TcpConnectionSnapshot { Local = "10.0.0.1:443", Remote = "10.0.0.2:51515", State = "Established" });
             return s;

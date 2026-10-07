@@ -98,6 +98,9 @@ namespace PerformanceStatistics.Monitoring
                 {
                     Name = ni.Name,
                     Description = ni.Description,
+                    Addresses = ni.Addresses ?? new List<string>(),
+                    MacAddress = ni.MacAddress ?? string.Empty,
+                    InterfaceType = ni.InterfaceType ?? string.Empty,
                     SpeedBitsPerSecond = ni.SpeedBitsPerSecond,
                     ReceivedBytesPerSecond = ni.ReceivedBytesPerSecond,
                     SentBytesPerSecond = ni.SentBytesPerSecond,

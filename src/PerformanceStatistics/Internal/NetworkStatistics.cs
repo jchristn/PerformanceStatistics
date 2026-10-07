@@ -39,6 +39,9 @@ namespace PerformanceStatistics.Internal
 
                     NetworkTotals t = new NetworkTotals();
                     t.Description = ni.Description ?? string.Empty;
+                    t.Addresses = ReadAddresses(ni);
+                    t.MacAddress = ReadMac(ni);
+                    t.InterfaceType = ni.NetworkInterfaceType.ToString();
                     t.Speed = TryGet(() => ni.Speed > 0 ? (long?)ni.Speed : null);
 
                     IPInterfaceStatistics stats = GetStatistics(ni);
@@ -94,6 +97,9 @@ namespace PerformanceStatistics.Internal
                 counters.Name = entry.Key;
                 counters.Description = curr.Description;
                 counters.SpeedBitsPerSecond = curr.Speed;
+                counters.Addresses = curr.Addresses ?? new List<string>();
+                counters.MacAddress = curr.MacAddress ?? string.Empty;
+                counters.InterfaceType = curr.InterfaceType ?? string.Empty;
                 counters.ReceivedBytesPerSecond = Math.Round(Math.Max(0, curr.ReceivedBytes - prev.ReceivedBytes) / seconds, 0);
                 counters.SentBytesPerSecond = Math.Round(Math.Max(0, curr.SentBytes - prev.SentBytes) / seconds, 0);
                 if (curr.ReceivedPackets.HasValue && prev.ReceivedPackets.HasValue)
@@ -110,6 +116,43 @@ namespace PerformanceStatistics.Internal
         #endregion
 
         #region Private-Methods
+
+        private static List<string> ReadAddresses(NetworkInterface ni)
+        {
+            List<string> ret = new List<string>();
+            try
+            {
+                foreach (UnicastIPAddressInformation a in ni.GetIPProperties().UnicastAddresses)
+                {
+                    string address = a.Address.ToString();
+                    int prefix = -1;
+                    try { prefix = a.PrefixLength; } catch { }
+                    ret.Add(prefix >= 0 ? address + "/" + prefix.ToString(System.Globalization.CultureInfo.InvariantCulture) : address);
+                }
+            }
+            catch
+            {
+                // Address information unavailable on this platform or interface.
+            }
+
+            // IPv4 first, then IPv6, each in the order the OS reports them.
+            ret.Sort((x, y) => (x.Contains(":") ? 1 : 0).CompareTo(y.Contains(":") ? 1 : 0));
+            return ret;
+        }
+
+        private static string ReadMac(NetworkInterface ni)
+        {
+            try
+            {
+                byte[] bytes = ni.GetPhysicalAddress().GetAddressBytes();
+                if (bytes.Length == 0) return string.Empty;
+                return String.Join(":", Array.ConvertAll(bytes, b => b.ToString("x2", System.Globalization.CultureInfo.InvariantCulture)));
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
 
         private static IPInterfaceStatistics GetStatistics(NetworkInterface ni)
         {

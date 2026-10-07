@@ -585,6 +585,21 @@
             Packets sent, or null if not reported.
             </summary>
         </member>
+        <member name="F:PerformanceStatistics.Internal.NetworkTotals.Addresses">
+            <summary>
+            Unicast addresses in CIDR form (e.g. "192.168.1.10/24", "fe80::1%en0/64").
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.Internal.NetworkTotals.MacAddress">
+            <summary>
+            MAC address as colon-separated hex, or empty.
+            </summary>
+        </member>
+        <member name="F:PerformanceStatistics.Internal.NetworkTotals.InterfaceType">
+            <summary>
+            Interface type, e.g. "Ethernet" or "Wireless80211".
+            </summary>
+        </member>
         <member name="T:PerformanceStatistics.Internal.UnixNativeMethods">
             <summary>
             libc interop shared by Linux and macOS.
@@ -1332,6 +1347,21 @@
         <member name="P:PerformanceStatistics.NetworkInterfaceCounters.Description">
             <summary>
             Interface description.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.NetworkInterfaceCounters.Addresses">
+            <summary>
+            Unicast addresses in CIDR form, IPv4 first (e.g. "192.168.1.10/24", "fe80::1%en0/64").
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.NetworkInterfaceCounters.MacAddress">
+            <summary>
+            MAC address as colon-separated hex, or empty if the interface has none.
+            </summary>
+        </member>
+        <member name="P:PerformanceStatistics.NetworkInterfaceCounters.InterfaceType">
+            <summary>
+            Interface type, e.g. "Ethernet", "Wireless80211", or "Tunnel".
             </summary>
         </member>
         <member name="P:PerformanceStatistics.NetworkInterfaceCounters.SpeedBitsPerSecond">

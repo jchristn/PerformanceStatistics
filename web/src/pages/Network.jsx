@@ -23,13 +23,13 @@ export default function Network({ hostId, latest, history, range }) {
     <section>
       <div className="toolbar"><label className="small"><input type="checkbox" checked={hideIdle} onChange={(e) => setHideIdle(e.target.checked)} /> Hide idle interfaces</label></div>
       <table className="simple selectable">
-        <thead><tr><th>Interface</th><th className="num">Received</th><th className="num">Sent</th><th className="num">Rx packets</th><th className="num">Tx packets</th><th className="num">Speed</th><th>Description</th></tr></thead>
+        <thead><tr><th>Interface</th><th>Addresses</th><th className="num">Received</th><th className="num">Sent</th><th className="num">Rx packets</th><th className="num">Tx packets</th><th className="num">Speed</th><th>Type</th><th>MAC</th><th>Description</th></tr></thead>
         <tbody>
           {shown.map((n) => (
             <tr key={n.name} className={n.name === name ? 'selected' : ''} onClick={() => setChosen(n.name)}>
-              <td>{n.name}</td><td className="num">{format(n.receivedBytesPerSecond, 'BytesPerSecond')}</td><td className="num">{format(n.sentBytesPerSecond, 'BytesPerSecond')}</td>
+              <td>{n.name}</td><td className="mono">{(n.addresses || []).length ? n.addresses.map((a) => <div key={a}>{a}</div>) : <span className="muted">—</span>}</td><td className="num">{format(n.receivedBytesPerSecond, 'BytesPerSecond')}</td><td className="num">{format(n.sentBytesPerSecond, 'BytesPerSecond')}</td>
               <td className="num">{format(n.receivedPacketsPerSecond, 'PerSecond')}</td><td className="num">{format(n.sentPacketsPerSecond, 'PerSecond')}</td>
-              <td className="num">{n.speedBitsPerSecond ? `${format(n.speedBitsPerSecond / 1e6, 'Count')} Mb/s` : 'n/a'}</td><td className="muted">{n.description}</td>
+              <td className="num">{n.speedBitsPerSecond ? `${format(n.speedBitsPerSecond / 1e6, 'Count')} Mb/s` : 'n/a'}</td><td>{n.interfaceType || ''}</td><td className="mono">{n.macAddress || ''}</td><td className="muted">{n.description}</td>
             </tr>
           ))}
         </tbody>

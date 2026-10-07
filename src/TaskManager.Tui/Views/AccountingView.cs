@@ -4,6 +4,7 @@ using PerformanceStatistics.Monitoring;
 using TUIKit;
 using TUIKit.Content;
 using TUIKit.Layout;
+using TUIKit.Modals;
 using TUIKit.Widgets;
 
 namespace TaskManager.Tui
@@ -29,7 +30,7 @@ namespace TaskManager.Tui
 
         #region Constructors-and-Factories
 
-        public AccountingView(TaskManagerState state)
+        public AccountingView(TaskManagerState state, Action<Modal> show)
         {
             _State = state;
             _Table.KeySelector = r => r.Group;
@@ -43,10 +44,17 @@ namespace TaskManager.Tui
                 .Column(new DataColumn<AccountingRow>("Processes", r => r.ProcessCount.ToString(CultureInfo.InvariantCulture), true) { Alignment = CellAlignment.Right, SortKey = r => r.ProcessCount });
             _Table.StretchLastColumn = true;
             _Table.SortByColumn(1, false);
+            _Table.RowActivated += index =>
+            {
+                AccountingRow row = _Table.SelectedRow;
+                if (row == null) return;
+                string group = row.Group;
+                show(new DetailsModal("Accounting: " + group, () => Details.Accounting(_State, group)));
+            };
 
             Root = new FramedStack(SplitOrientation.Vertical)
                 .Add(_Info, StackSize.Fixed(1), "Accounting")
-                .Add(_Table, StackSize.Weighted(1), "Consumers");
+                .Add(_Table, StackSize.Weighted(1), "Consumers - Enter for details");
         }
 
         #endregion

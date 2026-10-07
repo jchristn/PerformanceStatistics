@@ -109,6 +109,50 @@ namespace Test.Tui
                     Must(accounting.Contains("hotproc") && accounting.Contains("CPU time"), "Accounting tab", accounting);
                 }),
 
+                Case("ChartMaximizesWithAxes", "Tab into a chart, Enter maximizes it with X and Y axis labels, Esc restores", h =>
+                {
+                    for (int i = 0; i < 5; i++) h.Emit();
+                    for (int i = 0; i < 8 && !h.Screen().Contains("Enter: maximize"); i++) h.Key("tab");
+                    Must(h.Screen().Contains("Enter: maximize"), "A chart takes focus", h.Screen());
+                    h.Key("enter");
+                    string screen = h.Screen();
+                    Must(screen.Contains("Y: ") && screen.Contains("X: Time"), "Axis titles", screen);
+                    string tick = new DateTime(2026, 10, 7, 12, 0, 3, DateTimeKind.Utc).ToLocalTime().ToString("HH:mm:0");
+                    Must(screen.Contains(tick), "Time tick labels in local time", screen);
+                    h.Key("escape");
+                    Must(!h.Screen().Contains("X: Time"), "Esc restores", h.Screen());
+                }),
+
+                Case("ProcessDetailsModal", "Enter on a process opens a details modal with path, command line, and charts", h =>
+                {
+                    h.Emit();
+                    h.Emit();
+                    h.Key("2");
+                    h.Key("n");
+                    h.Key("enter");
+                    string screen = h.Screen();
+                    ProcessSnapshot selected = h.App.ProcessTable.SelectedRow;
+                    Must(screen.Contains(selected.Name + " (PID " + selected.Pid + ")"), "Modal title", screen);
+                    Must(screen.Contains("Command line") && screen.Contains("--serve"), "Command line", screen);
+                    Must(screen.Contains("X: Time"), "Charts with axes", screen);
+                    h.Key("escape");
+                    Must(!h.Screen().Contains("(PID " + selected.Pid + ")"), "Esc closes", h.Screen());
+                }),
+
+                Case("InterfaceAddressesAndDetails", "Network tab shows interface addresses; Enter opens interface details", h =>
+                {
+                    h.Emit();
+                    h.Emit();
+                    h.Key("3");
+                    string screen = h.Screen();
+                    Must(screen.Contains("10.0.0.1/24") && screen.Contains("+2"), "Address summary", screen);
+                    h.Key("enter");
+                    screen = h.Screen();
+                    Must(screen.Contains("Interface eth0"), "Details modal", screen);
+                    Must(screen.Contains("192.168.1.5/24") && screen.Contains("fe80::1/64"), "Every address", screen);
+                    Must(screen.Contains("02:00:00:aa:bb:cc"), "MAC address", screen);
+                }),
+
                 Case("HelpOpens", "? opens help", h =>
                 {
                     h.Emit();

@@ -3,6 +3,7 @@ using PerformanceStatistics.Monitoring;
 using TUIKit;
 using TUIKit.Content;
 using TUIKit.Layout;
+using TUIKit.Modals;
 using TUIKit.Widgets;
 
 namespace TaskManager.Tui
@@ -22,17 +23,15 @@ namespace TaskManager.Tui
 
         private readonly TaskManagerState _State;
         private readonly DataTable<VolumeSnapshot> _Volumes = new DataTable<VolumeSnapshot>();
-        private readonly LineChart _Bytes;
-        private readonly ChartSeries _BytesWrite;
-        private readonly LineChart _Ops;
-        private readonly ChartSeries _OpsWrite;
+        private readonly ChartPanel _Bytes;
+        private readonly ChartPanel _Ops;
         private readonly Pane _Queues = new Pane("queues");
 
         #endregion
 
         #region Constructors-and-Factories
 
-        public DisksView(TaskManagerState state)
+        public DisksView(TaskManagerState state, Action<Modal> show)
         {
             _State = state;
             _Volumes.KeySelector = v => v.Name;
@@ -45,11 +44,23 @@ namespace TaskManager.Tui
                 .Column(new DataColumn<VolumeSnapshot>("Used %", v => v.TotalBytes > 0 ? MetricFormatter.Format(100.0 * v.UsedBytes / v.TotalBytes, MetricUnitEnum.Percent) : MetricFormatter.NotAvailable) { Alignment = CellAlignment.Right });
             _Volumes.StretchLastColumn = true;
 
-            _Bytes = Charts.CreatePair("Read", Charts.Read, null, "Write", Charts.Write, out _BytesWrite);
-            _Ops = Charts.CreatePair("Read ops", Charts.Read, null, "Write ops", Charts.Write, out _OpsWrite);
+            _Volumes.RowActivated += index =>
+            {
+                VolumeSnapshot row = _Volumes.SelectedRow;
+                if (row == null) return;
+                string name = row.Name;
+                show(new DetailsModal("Volume " + name, () =>
+                {
+                    VolumeSnapshot v = _State.Latest?.Volumes.Find(x => x.Name == name);
+                    return v != null ? Details.Volume(v) : new DetailsContent().Row("Volume", name + " is no longer mounted.");
+                }));
+            };
+
+            _Bytes = Charts.Panel("Disk bytes", MetricUnitEnum.BytesPerSecond, show);
+            _Ops = Charts.Panel("Disk operations", MetricUnitEnum.PerSecond, show);
 
             Root = new FramedStack(SplitOrientation.Vertical)
-                .Add(_Volumes, StackSize.Weighted(2, 4), "Volumes")
+                .Add(_Volumes, StackSize.Weighted(2, 4), "Volumes - Enter for details")
                 .Add(new FramedStack(SplitOrientation.Horizontal)
                     .Add(_Bytes, StackSize.Weighted(1), "Disk bytes/s")
                     .Add(_Ops, StackSize.Weighted(1), "Disk operations/s"), StackSize.Weighted(3, 6))
@@ -64,13 +75,14 @@ namespace TaskManager.Tui
         {
             HostSnapshot s = _State.Latest;
             if (s == null) return;
-            double interval = s.IntervalSeconds > 0 ? s.IntervalSeconds : 1;
             HistoryBuffer h = _State.History;
             _Volumes.Bind(s.Volumes);
-            _Bytes.SetValues(Charts.AtLeastTwo(_State.Window(h.GetSystemSeries(MetricIds.SystemDiskReadBytes), interval)));
-            _BytesWrite.SetValues(Charts.AtLeastTwo(_State.Window(h.GetSystemSeries(MetricIds.SystemDiskWriteBytes), interval)));
-            _Ops.SetValues(Charts.AtLeastTwo(_State.Window(h.GetSystemSeries(MetricIds.SystemDiskReadOps), interval)));
-            _OpsWrite.SetValues(Charts.AtLeastTwo(_State.Window(h.GetSystemSeries(MetricIds.SystemDiskWriteOps), interval)));
+            _Bytes.Update(_State.Chart("Disk bytes", MetricUnitEnum.BytesPerSecond, null,
+                ("Read", Charts.Read, h.GetSystemSeries(MetricIds.SystemDiskReadBytes)),
+                ("Write", Charts.Write, h.GetSystemSeries(MetricIds.SystemDiskWriteBytes))));
+            _Ops.Update(_State.Chart("Disk operations", MetricUnitEnum.PerSecond, null,
+                ("Read ops", Charts.Read, h.GetSystemSeries(MetricIds.SystemDiskReadOps)),
+                ("Write ops", Charts.Write, h.GetSystemSeries(MetricIds.SystemDiskWriteOps))));
 
             _Queues.Clear();
             string reason = _State.Unavailable(MetricIds.SystemDiskReadQueue);
