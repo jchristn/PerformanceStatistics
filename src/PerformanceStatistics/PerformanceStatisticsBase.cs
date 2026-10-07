@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PerformanceStatistics
@@ -68,7 +69,7 @@ namespace PerformanceStatistics
                         foreach (Process process in GetProcessesByName(name))
                         {
                             int pid;
-                            ProcessCountersBase tracked = Track(process, out pid);
+                            ProcessCountersBase tracked = Track(_Tracked, process, out pid);
                             if (tracked == null) continue;
                             seen.Add(pid);
                             counters.Add(tracked);
@@ -82,6 +83,21 @@ namespace PerformanceStatistics
                     }
 
                     return ret;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Static facts about the host. Computed once.
+        /// </summary>
+        public SystemInfo SystemInfo
+        {
+            get
+            {
+                lock (_Lock)
+                {
+                    if (_SystemInfo == null) _SystemInfo = BuildSystemInfo();
+                    return _SystemInfo;
                 }
             }
         }
@@ -113,7 +129,9 @@ namespace PerformanceStatistics
         private readonly object _Lock = new object();
         private readonly SystemCountersBase _System;
         private readonly Dictionary<int, ProcessCountersBase> _Tracked = new Dictionary<int, ProcessCountersBase>();
+        private readonly Dictionary<int, ProcessCountersBase> _AllTracked = new Dictionary<int, ProcessCountersBase>();
         private List<string> _MonitoredProcessNames = new List<string>();
+        private SystemInfo _SystemInfo = null;
         private bool _Disposed = false;
 
         #endregion
@@ -149,6 +167,50 @@ namespace PerformanceStatistics
             return all.Where(c =>
                 (sourcePort == null || c.LocalEndPoint.Port == sourcePort.Value)
                 && (destPort == null || c.RemoteEndPoint.Port == destPort.Value)).ToArray();
+        }
+
+        /// <summary>
+        /// Counters for every running process the caller can see. A process that is still running keeps the same
+        /// counter instance across calls (refreshed with current values), so rates are measured between calls;
+        /// counters for exited processes are disposed. Call once per sampling pass.
+        /// </summary>
+        /// <returns>Process counters, ordered by process ID.</returns>
+        public IReadOnlyList<IProcessCounters> GetAllProcesses()
+        {
+            lock (_Lock)
+            {
+                List<IProcessCounters> ret = new List<IProcessCounters>();
+                if (_Disposed) return ret;
+
+                Process[] processes;
+                try
+                {
+                    processes = Process.GetProcesses();
+                }
+                catch
+                {
+                    return ret;
+                }
+
+                HashSet<int> seen = new HashSet<int>();
+                foreach (Process process in processes)
+                {
+                    int pid;
+                    ProcessCountersBase tracked = Track(_AllTracked, process, out pid);
+                    if (tracked == null) continue;
+                    if (!seen.Add(pid)) continue;
+                    ret.Add(tracked);
+                }
+
+                foreach (int stalePid in _AllTracked.Keys.Where(k => !seen.Contains(k)).ToList())
+                {
+                    _AllTracked[stalePid].Dispose();
+                    _AllTracked.Remove(stalePid);
+                }
+
+                ret.Sort((a, b) => (a.ProcessId ?? 0).CompareTo(b.ProcessId ?? 0));
+                return ret;
+            }
         }
 
         /// <summary>
@@ -227,6 +289,8 @@ namespace PerformanceStatistics
                 {
                     foreach (ProcessCountersBase counters in _Tracked.Values) counters.Dispose();
                     _Tracked.Clear();
+                    foreach (ProcessCountersBase counters in _AllTracked.Values) counters.Dispose();
+                    _AllTracked.Clear();
                     _System.Dispose();
                 }
 
@@ -260,6 +324,19 @@ namespace PerformanceStatistics
             return new List<string>();
         }
 
+        private SystemInfo BuildSystemInfo()
+        {
+            SystemInfo info = new SystemInfo();
+            try { info.MachineName = Environment.MachineName; } catch { }
+            info.Platform = PerformanceStatisticsFactory.CurrentPlatform;
+            info.OperatingSystem = RuntimeInformation.OSDescription;
+            info.Architecture = RuntimeInformation.OSArchitecture.ToString();
+            info.LogicalProcessors = Environment.ProcessorCount;
+            info.TotalMemoryBytes = _System.GetTotalMemoryBytes();
+            try { _System.FillSystemInfo(info); } catch { }
+            return info;
+        }
+
         private static Process[] GetProcessesByName(string name)
         {
             try
@@ -272,7 +349,7 @@ namespace PerformanceStatistics
             }
         }
 
-        private ProcessCountersBase Track(Process process, out int pid)
+        private ProcessCountersBase Track(Dictionary<int, ProcessCountersBase> tracked, Process process, out int pid)
         {
             pid = -1;
             try
@@ -286,7 +363,7 @@ namespace PerformanceStatistics
             }
 
             ProcessCountersBase existing;
-            if (_Tracked.TryGetValue(pid, out existing))
+            if (tracked.TryGetValue(pid, out existing))
             {
                 if (!existing.HasExited())
                 {
@@ -297,11 +374,11 @@ namespace PerformanceStatistics
 
                 // The PID was reused by a new process.
                 existing.Dispose();
-                _Tracked.Remove(pid);
+                tracked.Remove(pid);
             }
 
             ProcessCountersBase created = CreateProcessCounters(process);
-            _Tracked[pid] = created;
+            tracked[pid] = created;
             return created;
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -150,6 +151,173 @@ namespace PerformanceStatistics
             }
         }
 
+        /// <summary>
+        /// CPU utilization percentage (0-100) per logical processor, averaged over the interval since the previous read.
+        /// Empty if unavailable.
+        /// </summary>
+        public IReadOnlyList<double> PerCoreCpuUtilizationPercent
+        {
+            get
+            {
+                double[] percents;
+                if (_Disposed || !_PerCoreSampler.TryGet(out percents)) return new double[0];
+                return percents;
+            }
+        }
+
+        /// <summary>
+        /// Total physical memory in megabytes.
+        /// </summary>
+        public double? MemoryTotalMegabytes
+        {
+            get
+            {
+                long total;
+                if (_Disposed || !SafeTryGetTotalMemoryBytes(out total)) return null;
+                return Math.Round(total / BytesPerMegabyte, 0);
+            }
+        }
+
+        /// <summary>
+        /// Used physical memory in megabytes (total minus available).
+        /// </summary>
+        public double? MemoryUsedMegabytes
+        {
+            get
+            {
+                long total, available;
+                if (_Disposed || !SafeTryGetTotalMemoryBytes(out total) || !SafeTryGetAvailableMemoryBytes(out available)) return null;
+                return Math.Round(Math.Max(0, total - available) / BytesPerMegabyte, 0);
+            }
+        }
+
+        /// <summary>
+        /// Swap capacity in megabytes (Windows: paging file capacity beyond physical memory). Null if unavailable.
+        /// </summary>
+        public double? SwapTotalMegabytes
+        {
+            get
+            {
+                long total, used;
+                if (_Disposed || !SafeTryGetSwap(out total, out used)) return null;
+                return Math.Round(total / BytesPerMegabyte, 0);
+            }
+        }
+
+        /// <summary>
+        /// Swap in use in megabytes (Windows: committed memory beyond physical memory in use). Null if unavailable.
+        /// </summary>
+        public double? SwapUsedMegabytes
+        {
+            get
+            {
+                long total, used;
+                if (_Disposed || !SafeTryGetSwap(out total, out used)) return null;
+                return Math.Round(used / BytesPerMegabyte, 0);
+            }
+        }
+
+        /// <summary>
+        /// Bytes read per second across physical disks, averaged over the interval since the previous read.
+        /// </summary>
+        public double? TotalDiskReadBytesPerSecond
+        {
+            get
+            {
+                DiskIoRates rates;
+                if (_Disposed || !_DiskSampler.TryGet(out rates)) return null;
+                return Math.Round(rates.ReadBytesPerSecond, 0);
+            }
+        }
+
+        /// <summary>
+        /// Bytes written per second across physical disks, averaged over the interval since the previous read.
+        /// </summary>
+        public double? TotalDiskWriteBytesPerSecond
+        {
+            get
+            {
+                DiskIoRates rates;
+                if (_Disposed || !_DiskSampler.TryGet(out rates)) return null;
+                return Math.Round(rates.WriteBytesPerSecond, 0);
+            }
+        }
+
+        /// <summary>
+        /// Bytes received per second across non-loopback interfaces that are up.
+        /// </summary>
+        public double? NetworkReceivedBytesPerSecond
+        {
+            get
+            {
+                List<NetworkInterfaceCounters> interfaces;
+                if (_Disposed || !_NetworkSampler.TryGet(out interfaces)) return null;
+                double total = 0;
+                foreach (NetworkInterfaceCounters ni in interfaces) total += ni.ReceivedBytesPerSecond;
+                return Math.Round(total, 0);
+            }
+        }
+
+        /// <summary>
+        /// Bytes sent per second across non-loopback interfaces that are up.
+        /// </summary>
+        public double? NetworkSentBytesPerSecond
+        {
+            get
+            {
+                List<NetworkInterfaceCounters> interfaces;
+                if (_Disposed || !_NetworkSampler.TryGet(out interfaces)) return null;
+                double total = 0;
+                foreach (NetworkInterfaceCounters ni in interfaces) total += ni.SentBytesPerSecond;
+                return Math.Round(total, 0);
+            }
+        }
+
+        /// <summary>
+        /// Per-interface throughput for non-loopback interfaces that are up.
+        /// </summary>
+        public IReadOnlyList<NetworkInterfaceCounters> NetworkInterfaces
+        {
+            get
+            {
+                List<NetworkInterfaceCounters> interfaces;
+                if (_Disposed || !_NetworkSampler.TryGet(out interfaces)) return new List<NetworkInterfaceCounters>();
+                return interfaces;
+            }
+        }
+
+        /// <summary>
+        /// Volumes counted toward the disk space totals.
+        /// </summary>
+        public IReadOnlyList<VolumeInfo> Volumes
+        {
+            get { return DiskSpace.GetVolumes(SafeIncludeDrive); }
+        }
+
+        /// <summary>
+        /// One-minute load average. Linux and macOS only; null on Windows.
+        /// </summary>
+        public double? LoadAverage1
+        {
+            get { return LoadAverage(0); }
+        }
+
+        /// <summary>
+        /// Five-minute load average. Linux and macOS only; null on Windows.
+        /// </summary>
+        public double? LoadAverage5
+        {
+            get { return LoadAverage(1); }
+        }
+
+        /// <summary>
+        /// Fifteen-minute load average. Linux and macOS only; null on Windows.
+        /// </summary>
+        public double? LoadAverage15
+        {
+            get { return LoadAverage(2); }
+        }
+
         #endregion
 
         #region Private-Members
@@ -158,6 +326,8 @@ namespace PerformanceStatistics
 
         private readonly DeltaSampler<CpuTimes, double> _CpuSampler;
         private readonly DeltaSampler<DiskIoTotals, DiskIoRates> _DiskSampler;
+        private readonly DeltaSampler<CpuTimes[], double[]> _PerCoreSampler;
+        private readonly DeltaSampler<Dictionary<string, NetworkTotals>, List<NetworkInterfaceCounters>> _NetworkSampler;
         private bool _Disposed = false;
 
         #endregion
@@ -179,7 +349,16 @@ namespace PerformanceStatistics
                 (prev, curr, elapsed) => CpuTimes.BusyPercent(prev, curr),
                 (prev, curr) => curr.Total > prev.Total);
             _DiskSampler = new DeltaSampler<DiskIoTotals, DiskIoRates>(SafeTryReadDiskTotals, DiskIoRates.Compute);
+            _PerCoreSampler = new DeltaSampler<CpuTimes[], double[]>(
+                SafeTryReadPerCoreCpuTimes,
+                ComputePerCore,
+                (prev, curr) => SumTotal(curr) > SumTotal(prev));
+            _NetworkSampler = new DeltaSampler<Dictionary<string, NetworkTotals>, List<NetworkInterfaceCounters>>(
+                NetworkStatistics.TryReadTotals,
+                NetworkStatistics.Compute);
             _CpuSampler.Prime();
+            _PerCoreSampler.Prime();
+            _NetworkSampler.Prime();
         }
 
         #endregion
@@ -203,6 +382,13 @@ namespace PerformanceStatistics
             sb.Append("  Total Disk Free Megabytes     : " + Format(TotalDiskFreeMegabytes) + "MB" + Environment.NewLine);
             sb.Append("  Total Disk Size Megabytes     : " + Format(TotalDiskSizeMegabytes) + "MB" + Environment.NewLine);
             sb.Append("  Total Disk Used Megabytes     : " + Format(TotalDiskUsedMegabytes) + "MB" + Environment.NewLine);
+            sb.Append("  Memory Total (Megabytes)      : " + Format(MemoryTotalMegabytes) + "MB" + Environment.NewLine);
+            sb.Append("  Memory Used (Megabytes)       : " + Format(MemoryUsedMegabytes) + "MB" + Environment.NewLine);
+            sb.Append("  Swap Used / Total (Megabytes) : " + Format(SwapUsedMegabytes) + " / " + Format(SwapTotalMegabytes) + "MB" + Environment.NewLine);
+            sb.Append("  Disk Read / Write (Bytes/sec) : " + Format(TotalDiskReadBytesPerSecond) + " / " + Format(TotalDiskWriteBytesPerSecond) + Environment.NewLine);
+            sb.Append("  Network Rx / Tx (Bytes/sec)   : " + Format(NetworkReceivedBytesPerSecond) + " / " + Format(NetworkSentBytesPerSecond) + Environment.NewLine);
+            sb.Append("  Load Average (1/5/15)         : " + Format(LoadAverage1) + " / " + Format(LoadAverage5) + " / " + Format(LoadAverage15) + Environment.NewLine);
+            sb.Append("  Per-Core CPU Percent          : " + String.Join(" ", PerCoreCpuUtilizationPercent) + Environment.NewLine);
             return sb.ToString();
         }
 
@@ -232,6 +418,70 @@ namespace PerformanceStatistics
         /// <param name="bytes">Bytes.</param>
         /// <returns>True if read.</returns>
         internal abstract bool TryGetAvailableMemoryBytes(out long bytes);
+
+        /// <summary>
+        /// Read cumulative CPU times per logical processor. Must not throw. The default reports unavailable.
+        /// </summary>
+        /// <param name="times">Times, one per logical processor.</param>
+        /// <returns>True if read.</returns>
+        internal virtual bool TryReadPerCoreCpuTimes(out CpuTimes[] times)
+        {
+            times = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Read total physical memory in bytes. Must not throw. The default reports unavailable.
+        /// </summary>
+        /// <param name="bytes">Bytes.</param>
+        /// <returns>True if read.</returns>
+        internal virtual bool TryGetTotalMemoryBytes(out long bytes)
+        {
+            bytes = 0;
+            return false;
+        }
+
+        /// <summary>
+        /// Read swap capacity and usage in bytes. Must not throw. The default reports unavailable.
+        /// </summary>
+        /// <param name="total">Capacity.</param>
+        /// <param name="used">In use.</param>
+        /// <returns>True if read.</returns>
+        internal virtual bool TryGetSwap(out long total, out long used)
+        {
+            total = 0;
+            used = 0;
+            return false;
+        }
+
+        /// <summary>
+        /// Read the 1, 5, and 15 minute load averages. Must not throw. The default reports unavailable.
+        /// </summary>
+        /// <param name="loads">Three values.</param>
+        /// <returns>True if read.</returns>
+        internal virtual bool TryGetLoadAverages(out double[] loads)
+        {
+            loads = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Fill platform-specific host facts (CPU model, boot time). The default does nothing.
+        /// </summary>
+        /// <param name="info">Info to fill.</param>
+        internal virtual void FillSystemInfo(SystemInfo info)
+        {
+        }
+
+        /// <summary>
+        /// Total physical memory in bytes for <see cref="SystemInfo"/>, or null.
+        /// </summary>
+        /// <returns>Bytes or null.</returns>
+        internal long? GetTotalMemoryBytes()
+        {
+            long bytes;
+            return SafeTryGetTotalMemoryBytes(out bytes) ? (long?)bytes : null;
+        }
 
         /// <summary>
         /// Read cumulative completed disk operations. Must not throw. The default reports unavailable.
@@ -280,6 +530,76 @@ namespace PerformanceStatistics
         #endregion
 
         #region Private-Methods
+
+        private bool SafeTryReadPerCoreCpuTimes(out CpuTimes[] times)
+        {
+            try
+            {
+                return TryReadPerCoreCpuTimes(out times) && times != null && times.Length > 0;
+            }
+            catch
+            {
+                times = null;
+                return false;
+            }
+        }
+
+        private static double[] ComputePerCore(CpuTimes[] previous, CpuTimes[] current, TimeSpan elapsed)
+        {
+            int count = Math.Min(previous.Length, current.Length);
+            double[] ret = new double[count];
+            for (int i = 0; i < count; i++) ret[i] = Math.Round(CpuTimes.BusyPercent(previous[i], current[i]), 0);
+            return ret;
+        }
+
+        private static ulong SumTotal(CpuTimes[] times)
+        {
+            ulong total = 0;
+            foreach (CpuTimes t in times) total += t.Total;
+            return total;
+        }
+
+        private bool SafeTryGetTotalMemoryBytes(out long bytes)
+        {
+            try
+            {
+                return TryGetTotalMemoryBytes(out bytes) && bytes > 0;
+            }
+            catch
+            {
+                bytes = 0;
+                return false;
+            }
+        }
+
+        private bool SafeTryGetSwap(out long total, out long used)
+        {
+            try
+            {
+                return TryGetSwap(out total, out used) && total >= 0 && used >= 0;
+            }
+            catch
+            {
+                total = 0;
+                used = 0;
+                return false;
+            }
+        }
+
+        private double? LoadAverage(int index)
+        {
+            if (_Disposed) return null;
+            try
+            {
+                double[] loads;
+                if (!TryGetLoadAverages(out loads) || loads == null || loads.Length <= index) return null;
+                return Math.Round(loads[index], 2);
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         private bool SafeTryReadCpuTimes(out CpuTimes times)
         {

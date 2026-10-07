@@ -90,5 +90,69 @@ namespace PerformanceStatistics
         /// Peak working set memory in bytes.
         /// </summary>
         long? PeakWorkingSetMemory { get; }
+
+        /// <summary>
+        /// Parent process ID, or null if unavailable.
+        /// </summary>
+        int? ParentProcessId { get; }
+
+        /// <summary>
+        /// Full path of the process executable, or empty if unavailable (exited, or not permitted).
+        /// </summary>
+        string ExecutablePath { get; }
+
+        /// <summary>
+        /// Command line (arguments joined by spaces), or empty if unavailable.
+        /// On macOS this requires the same user or elevation.
+        /// </summary>
+        string CommandLine { get; }
+
+        /// <summary>
+        /// Owning user name (Windows: DOMAIN\user), or empty if unavailable.
+        /// </summary>
+        string UserName { get; }
+
+        /// <summary>
+        /// Process start time (UTC), or null if unavailable.
+        /// </summary>
+        DateTime? StartTimeUtc { get; }
+
+        /// <summary>
+        /// Scheduling state.
+        /// </summary>
+        ProcessStateEnum State { get; }
+
+        /// <summary>
+        /// Priority on the cross-platform scale, or null if unavailable.
+        /// </summary>
+        ProcessPriorityEnum? Priority { get; }
+
+        /// <summary>
+        /// Total CPU time consumed since the process started, or null if unavailable.
+        /// </summary>
+        TimeSpan? TotalProcessorTime { get; }
+
+        /// <summary>
+        /// Bytes read from storage per second, averaged over the interval since the previous read.
+        /// Null if unavailable (Linux: other users' processes without elevation).
+        /// </summary>
+        double? DiskReadBytesPerSecond { get; }
+
+        /// <summary>
+        /// Bytes written to storage per second, averaged over the interval since the previous read.
+        /// Null if unavailable.
+        /// </summary>
+        double? DiskWriteBytesPerSecond { get; }
+
+        /// <summary>
+        /// Total bytes read since the process started, or null if unavailable.
+        /// Windows counts all file I/O; Linux and macOS count storage I/O.
+        /// </summary>
+        long? DiskReadBytesTotal { get; }
+
+        /// <summary>
+        /// Total bytes written since the process started, or null if unavailable.
+        /// </summary>
+        long? DiskWriteBytesTotal { get; }
     }
 }

@@ -53,6 +53,37 @@ namespace PerformanceStatistics.Linux
         }
 
         /// <inheritdoc />
+        internal override bool TryReadPerCoreCpuTimes(out CpuTimes[] times)
+        {
+            return ProcFileParser.TryReadPerCoreCpuTimes(out times);
+        }
+
+        /// <inheritdoc />
+        internal override bool TryGetTotalMemoryBytes(out long bytes)
+        {
+            return ProcFileParser.TryGetTotalMemoryBytes(out bytes);
+        }
+
+        /// <inheritdoc />
+        internal override bool TryGetSwap(out long total, out long used)
+        {
+            return ProcFileParser.TryGetSwap(out total, out used);
+        }
+
+        /// <inheritdoc />
+        internal override bool TryGetLoadAverages(out double[] loads)
+        {
+            return ProcFileParser.TryGetLoadAverages(out loads);
+        }
+
+        /// <inheritdoc />
+        internal override void FillSystemInfo(SystemInfo info)
+        {
+            info.BootTimeUtc = ProcFileParser.GetBootTimeUtc();
+            info.CpuModel = ProcFileParser.GetCpuModel();
+        }
+
+        /// <inheritdoc />
         internal override bool TryReadDiskTotals(out DiskIoTotals totals)
         {
             return ProcFileParser.TryReadDiskTotals(out totals);

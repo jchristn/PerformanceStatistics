@@ -40,5 +40,19 @@ namespace PerformanceStatistics
         /// <param name="destPort">Destination port filter (optional).</param>
         /// <returns>Array of TCP connections matching the filter criteria.</returns>
         TcpConnectionInformation[] GetActiveTcpConnections(int? sourcePort = null, int? destPort = null);
+
+        /// <summary>
+        /// Static facts about the host: name, OS, architecture, CPU model, logical processors, memory, boot time.
+        /// </summary>
+        SystemInfo SystemInfo { get; }
+
+        /// <summary>
+        /// Counters for every running process the caller can see.
+        /// Like <see cref="MonitoredProcesses"/>, a process that is still running keeps the same counter instance
+        /// across calls (refreshed with current values), so rates are measured between calls; counters for exited
+        /// processes are disposed. Call once per sampling pass.
+        /// </summary>
+        /// <returns>Process counters, ordered by process ID.</returns>
+        IReadOnlyList<IProcessCounters> GetAllProcesses();
     }
 }

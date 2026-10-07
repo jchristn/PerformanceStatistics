@@ -6,7 +6,7 @@
 		<DocumentationFile>PerformanceStatistics.xml</DocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title></Title>
-		<Version>2.1.0</Version>
+		<Version>2.2.0</Version>
 		<Authors>Joel Christner</Authors>
 		<Company>Joel Christner</Company>
 		<Description>Cross-platform .NET library for capturing real-time performance statistics. Supports Windows, Linux, and macOS. Monitor CPU, memory, disk, and process metrics with a simple API.</Description>
@@ -18,7 +18,7 @@
 		<RepositoryType>github</RepositoryType>
 		<PackageTags>performance counters</PackageTags>
 		<ApplicationIcon>logo.ico</ApplicationIcon>
-		<PackageReleaseNotes>Consistent cross-platform semantics: shared base classes; process CPU now measured across MonitoredProcesses accesses and normalized to machine capacity everywhere; macOS uses native APIs (accurate available memory, de-duplicated APFS disk space, file descriptor counts, physical footprint); Windows CPU/memory via kernel32 and long-lived disk counters; Linux per-disk in-flight queues and partition-safe disk stats. See CHANGELOG.md.</PackageReleaseNotes>
+		<PackageReleaseNotes>Task-manager metrics: GetAllProcesses() with executable path, command line, user, parent PID, start time, state, priority, CPU time, and disk I/O per process; per-core CPU, memory total/used, swap, disk bytes/sec, per-interface network throughput, volumes, load averages, and SystemInfo; cross-platform ProcessActions (kill, kill tree, priority, suspend, resume); PERFSTATS_HOST_ROOT for containerized Linux agents. See CHANGELOG.md.</PackageReleaseNotes>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>

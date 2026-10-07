@@ -61,5 +61,61 @@ namespace PerformanceStatistics.Linux
         }
 
         #endregion
+
+        #region Internal-Methods
+
+        /// <inheritdoc />
+        internal override int? ReadParentProcessId(int pid)
+        {
+            char state;
+            int parent;
+            return ProcFileParser.TryReadProcessStat(pid, out state, out parent) ? (int?)parent : null;
+        }
+
+        /// <inheritdoc />
+        internal override string ReadExecutablePath(int pid)
+        {
+            return ProcFileParser.GetExecutablePath(pid);
+        }
+
+        /// <inheritdoc />
+        internal override string ReadCommandLine(int pid)
+        {
+            return ProcFileParser.GetCommandLine(pid);
+        }
+
+        /// <inheritdoc />
+        internal override string ReadUserName(int pid)
+        {
+            return ProcFileParser.GetUserName(pid);
+        }
+
+        /// <inheritdoc />
+        internal override ProcessStateEnum ReadState(int pid)
+        {
+            char state;
+            int parent;
+            if (!ProcFileParser.TryReadProcessStat(pid, out state, out parent)) return ProcessStateEnum.Unknown;
+            switch (state)
+            {
+                case 'R': return ProcessStateEnum.Running;
+                case 'S':
+                case 'I': return ProcessStateEnum.Sleeping;
+                case 'D': return ProcessStateEnum.Waiting;
+                case 'T':
+                case 't': return ProcessStateEnum.Stopped;
+                case 'Z':
+                case 'X': return ProcessStateEnum.Zombie;
+                default: return ProcessStateEnum.Unknown;
+            }
+        }
+
+        /// <inheritdoc />
+        internal override bool TryReadDiskIoBytes(int pid, out long readBytes, out long writeBytes)
+        {
+            return ProcFileParser.TryReadProcessIo(pid, out readBytes, out writeBytes);
+        }
+
+        #endregion
     }
 }

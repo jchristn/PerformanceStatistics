@@ -2,11 +2,47 @@
 
 ## Current Version
 
-v2.1.0
+v2.2.0
 
-Reliability and consistency release: every metric now means the same thing, and is measured the same way, on Windows, Linux, and macOS. The public API is source-compatible with v2.0.x; see **Behavior changes** before upgrading.
+Task-manager metrics and process actions, on the v2.1.0 sampling model, for the apps planned in USER_APPS.md. Additive: existing members are unchanged. Interfaces gained members, so code that implements `IPerformanceStatistics`, `ISystemCounters`, or `IProcessCounters` itself must add them.
 
-### Architecture
+### New
+
+- **`IPerformanceStatistics.GetAllProcesses()`**: every visible process, ordered by PID. A running process keeps its counters across calls, like `MonitoredProcesses`.
+- **`IPerformanceStatistics.SystemInfo`**: machine, platform, OS, architecture, CPU model, logical processors, total memory, and boot time.
+- **New process fields**: `ParentProcessId`, `ExecutablePath`, `CommandLine`, `UserName`, `StartTimeUtc`, `State` (`ProcessStateEnum`), `Priority` (`ProcessPriorityEnum`), `TotalProcessorTime`, `DiskRead/WriteBytesPerSecond`, and `DiskRead/WriteBytesTotal`.
+- **New system series**:
+  - CPU and memory: `PerCoreCpuUtilizationPercent`, `MemoryTotalMegabytes`, `MemoryUsedMegabytes`, `SwapTotalMegabytes`, `SwapUsedMegabytes`.
+  - Disk and network: `TotalDiskRead/WriteBytesPerSecond`, `NetworkReceived/SentBytesPerSecond`, `NetworkInterfaces` (per-interface bytes and packets), `Volumes`.
+  - Load: `LoadAverage1/5/15`.
+- **`ProcessActions`**: `Kill(pid, entireProcessTree)`, `SetPriority`, `Suspend`, and `Resume`. They return `ProcessActionResultEnum` and never throw.
+- **`PERFSTATS_HOST_ROOT`**: on Linux, read `<root>/proc` and `<root>/sys`, so an agent in a container can report its host.
+
+### Per-platform sources
+
+| Field | Windows | Linux | macOS |
+|---|---|---|---|
+| Executable path | `QueryFullProcessImageName` | `/proc/<pid>/exe` | `proc_pidpath` |
+| Command line | `NtQueryInformationProcess(ProcessCommandLineInformation)` | `/proc/<pid>/cmdline` | `KERN_PROCARGS2` |
+| Parent, state, user | basic information, thread states, token | `/proc/<pid>/stat`, `status` | `PROC_PIDT_SHORTBSDINFO` |
+| Disk I/O bytes | `GetProcessIoCounters` (all I/O) | `/proc/<pid>/io` (storage) | `proc_pid_rusage` (storage) |
+| Per-core CPU | `NtQuerySystemInformation` | `/proc/stat` | `host_processor_info` |
+| Swap | paging file beyond RAM | `SwapTotal`/`SwapFree` | `vm.swapusage` |
+
+### Privilege notes
+
+- On macOS, CPU, disk I/O, handle count, footprint, and command line for **other users' processes** (root and system daemons) are null unless running elevated. macOS restricts task information, and Activity Monitor uses a privileged helper for the same reason.
+- On Linux, `/proc/<pid>/io` for other users' processes needs elevation.
+
+---
+
+## Previous Versions
+
+### v2.1.0
+
+Reliability and consistency release: every metric now means the same thing, and is measured the same way, on Windows, Linux, and macOS.
+
+#### Architecture
 
 - **Shared base classes**: `PerformanceStatisticsBase`, `SystemCountersBase`, and `ProcessCountersBase` own sampling, rounding, units, process tracking, formatting, and disposal. The platform classes (`Windows*`, `Linux*`, `Mac*`) supply only raw readings, so a fix now lands once instead of three times.
 - **One sampling model for rates** (`Internal/DeltaSampler`): CPU and disk operation rates are averages over the interval since the previous read, timed with a monotonic clock. The first read waits at most ~100ms for a second sample instead of returning a placeholder `0`. Reads less than 100ms apart return the previous value instead of resetting the baseline.
@@ -14,7 +50,7 @@ Reliability and consistency release: every metric now means the same thing, and 
 - Removed the unused `System.Text.Json` package dependency.
 - Added a GitHub Actions matrix (`.github/workflows/ci.yml`) running the full suite on Windows, Linux, and macOS for net8.0 and net10.0.
 
-### Fixes
+#### Fixes
 
 - **Process CPU was always 0 on Linux and macOS** when read through `MonitoredProcesses`, because every access disposed and recreated the counters. Running processes now keep their `IProcessCounters` instance across accesses (refreshed with current values), so CPU is measured between accesses. Counters are disposed only when the process exits or its name is removed.
 - **Duplicate names in `MonitoredProcessNames` threw `ArgumentException`**; they now collapse into one key.
@@ -28,7 +64,7 @@ Reliability and consistency release: every metric now means the same thing, and 
 - **Culture-dependent output**: `ToString()` and Windows values formatted with `"N2"` then re-parsed; all formatting is now invariant.
 - The interactive `Test` app was hard-wired to `WindowsPerformanceStatistics`; it now uses the factory.
 
-### Behavior changes
+#### Behavior changes
 
 | Member | Before | Now |
 |--------|--------|-----|
@@ -46,10 +82,6 @@ Reliability and consistency release: every metric now means the same thing, and 
 | Linux `TotalDiskReadQueue` / `TotalDiskWriteQueue` | I/O in progress / 2 for both | Separate in-flight reads and writes from `/sys/block/<disk>/inflight` |
 | Linux process `HandleCount` when unreadable | `0` | `null` |
 | Linux disk space | Fixed and network filesystems | Fixed filesystems only (a stale network mount could hang) |
-
----
-
-## Previous Versions
 
 ### v2.0.1
 

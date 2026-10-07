@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using PerformanceStatistics.Internal;
 
 namespace PerformanceStatistics.Mac
 {
@@ -90,6 +91,61 @@ namespace PerformanceStatistics.Mac
         /// <exception cref="ArgumentNullException">process is null.</exception>
         public MacProcessCounters(Process process) : base(process)
         {
+        }
+
+        #endregion
+
+        #region Internal-Methods
+
+        /// <inheritdoc />
+        internal override int? ReadParentProcessId(int pid)
+        {
+            int parent;
+            uint status, uid;
+            return MacSystemInfo.TryReadShortBsdInfo(pid, out parent, out status, out uid) ? (int?)parent : null;
+        }
+
+        /// <inheritdoc />
+        internal override string ReadExecutablePath(int pid)
+        {
+            return MacSystemInfo.GetExecutablePath(pid);
+        }
+
+        /// <inheritdoc />
+        internal override string ReadCommandLine(int pid)
+        {
+            return MacSystemInfo.GetCommandLine(pid);
+        }
+
+        /// <inheritdoc />
+        internal override string ReadUserName(int pid)
+        {
+            int parent;
+            uint status, uid;
+            return MacSystemInfo.TryReadShortBsdInfo(pid, out parent, out status, out uid) ? UnixNativeMethods.GetUserName(uid) : string.Empty;
+        }
+
+        /// <inheritdoc />
+        internal override ProcessStateEnum ReadState(int pid)
+        {
+            int parent;
+            uint status, uid;
+            if (!MacSystemInfo.TryReadShortBsdInfo(pid, out parent, out status, out uid)) return ProcessStateEnum.Unknown;
+            switch (status)
+            {
+                case 1:
+                case 2: return ProcessStateEnum.Running;
+                case 3: return ProcessStateEnum.Sleeping;
+                case 4: return ProcessStateEnum.Stopped;
+                case 5: return ProcessStateEnum.Zombie;
+                default: return ProcessStateEnum.Unknown;
+            }
+        }
+
+        /// <inheritdoc />
+        internal override bool TryReadDiskIoBytes(int pid, out long readBytes, out long writeBytes)
+        {
+            return MacSystemInfo.TryReadProcessIo(pid, out readBytes, out writeBytes);
         }
 
         #endregion

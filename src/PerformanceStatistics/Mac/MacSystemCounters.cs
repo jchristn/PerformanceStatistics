@@ -47,6 +47,38 @@ namespace PerformanceStatistics.Mac
         }
 
         /// <inheritdoc />
+        internal override bool TryReadPerCoreCpuTimes(out CpuTimes[] times)
+        {
+            return MacSystemInfo.TryReadPerCoreCpuTimes(out times);
+        }
+
+        /// <inheritdoc />
+        internal override bool TryGetTotalMemoryBytes(out long bytes)
+        {
+            return MacNativeMethods.TryGetSysctl("hw.memsize", out bytes);
+        }
+
+        /// <inheritdoc />
+        internal override bool TryGetSwap(out long total, out long used)
+        {
+            return MacSystemInfo.TryGetSwap(out total, out used);
+        }
+
+        /// <inheritdoc />
+        internal override bool TryGetLoadAverages(out double[] loads)
+        {
+            loads = new double[3];
+            return UnixNativeMethods.getloadavg(loads, 3) == 3;
+        }
+
+        /// <inheritdoc />
+        internal override void FillSystemInfo(SystemInfo info)
+        {
+            info.BootTimeUtc = MacSystemInfo.GetBootTimeUtc();
+            info.CpuModel = MacSystemInfo.GetCpuModel();
+        }
+
+        /// <inheritdoc />
         internal override bool TryReadDiskTotals(out DiskIoTotals totals)
         {
             return MacSystemInfo.TryReadDiskTotals(out totals);

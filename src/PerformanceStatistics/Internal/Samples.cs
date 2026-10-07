@@ -61,14 +61,28 @@ namespace PerformanceStatistics.Internal
         public long Writes;
 
         /// <summary>
+        /// Bytes read.
+        /// </summary>
+        public long ReadBytes;
+
+        /// <summary>
+        /// Bytes written.
+        /// </summary>
+        public long WriteBytes;
+
+        /// <summary>
         /// Instantiate.
         /// </summary>
         /// <param name="reads">Completed reads.</param>
         /// <param name="writes">Completed writes.</param>
-        public DiskIoTotals(long reads, long writes)
+        /// <param name="readBytes">Bytes read.</param>
+        /// <param name="writeBytes">Bytes written.</param>
+        public DiskIoTotals(long reads, long writes, long readBytes = 0, long writeBytes = 0)
         {
             Reads = reads;
             Writes = writes;
+            ReadBytes = readBytes;
+            WriteBytes = writeBytes;
         }
     }
 
@@ -88,6 +102,16 @@ namespace PerformanceStatistics.Internal
         public double WritesPerSecond;
 
         /// <summary>
+        /// Bytes read per second.
+        /// </summary>
+        public double ReadBytesPerSecond;
+
+        /// <summary>
+        /// Bytes written per second.
+        /// </summary>
+        public double WriteBytesPerSecond;
+
+        /// <summary>
         /// Compute rates between two cumulative samples. Counter resets (current lower than previous) yield zero.
         /// </summary>
         /// <param name="previous">Earlier sample.</param>
@@ -100,7 +124,45 @@ namespace PerformanceStatistics.Internal
             if (elapsed.TotalSeconds <= 0) return ret;
             ret.ReadsPerSecond = Math.Max(0, current.Reads - previous.Reads) / elapsed.TotalSeconds;
             ret.WritesPerSecond = Math.Max(0, current.Writes - previous.Writes) / elapsed.TotalSeconds;
+            ret.ReadBytesPerSecond = Math.Max(0, current.ReadBytes - previous.ReadBytes) / elapsed.TotalSeconds;
+            ret.WriteBytesPerSecond = Math.Max(0, current.WriteBytes - previous.WriteBytes) / elapsed.TotalSeconds;
             return ret;
         }
+    }
+
+    /// <summary>
+    /// Cumulative counters for one network interface.
+    /// </summary>
+    internal struct NetworkTotals
+    {
+        /// <summary>
+        /// Interface description.
+        /// </summary>
+        public string Description;
+
+        /// <summary>
+        /// Link speed in bits per second, or null.
+        /// </summary>
+        public long? Speed;
+
+        /// <summary>
+        /// Bytes received.
+        /// </summary>
+        public long ReceivedBytes;
+
+        /// <summary>
+        /// Bytes sent.
+        /// </summary>
+        public long SentBytes;
+
+        /// <summary>
+        /// Packets received, or null if not reported.
+        /// </summary>
+        public long? ReceivedPackets;
+
+        /// <summary>
+        /// Packets sent, or null if not reported.
+        /// </summary>
+        public long? SentPackets;
     }
 }

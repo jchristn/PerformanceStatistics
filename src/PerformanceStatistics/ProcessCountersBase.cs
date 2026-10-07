@@ -170,12 +170,155 @@ namespace PerformanceStatistics
             get { return Read(p => (long?)p.PeakWorkingSet64); }
         }
 
+        /// <summary>
+        /// Parent process ID, or null if unavailable.
+        /// </summary>
+        public int? ParentProcessId
+        {
+            get
+            {
+                int? pid = ProcessId;
+                if (!pid.HasValue) return null;
+                try { return ReadParentProcessId(pid.Value); }
+                catch { return null; }
+            }
+        }
+
+        /// <summary>
+        /// Full path of the process executable, or empty if unavailable.
+        /// </summary>
+        public string ExecutablePath
+        {
+            get { return Cached(ref _ExecutablePath, ReadExecutablePath); }
+        }
+
+        /// <summary>
+        /// Command line (arguments joined by spaces), or empty if unavailable.
+        /// </summary>
+        public string CommandLine
+        {
+            get { return Cached(ref _CommandLine, ReadCommandLine); }
+        }
+
+        /// <summary>
+        /// Owning user name, or empty if unavailable.
+        /// </summary>
+        public string UserName
+        {
+            get { return Cached(ref _UserName, ReadUserName); }
+        }
+
+        /// <summary>
+        /// Process start time (UTC), or null if unavailable.
+        /// </summary>
+        public DateTime? StartTimeUtc
+        {
+            get
+            {
+                if (_StartTimeRead) return _StartTimeUtc;
+                DateTime? value = Read(p => (DateTime?)p.StartTime.ToUniversalTime());
+                if (_Process != null)
+                {
+                    _StartTimeUtc = value;
+                    _StartTimeRead = true;
+                }
+
+                return value;
+            }
+        }
+
+        /// <summary>
+        /// Scheduling state.
+        /// </summary>
+        public ProcessStateEnum State
+        {
+            get
+            {
+                int? pid = ProcessId;
+                if (!pid.HasValue) return ProcessStateEnum.Unknown;
+                try { return ReadState(pid.Value); }
+                catch { return ProcessStateEnum.Unknown; }
+            }
+        }
+
+        /// <summary>
+        /// Priority on the cross-platform scale, or null if unavailable.
+        /// </summary>
+        public ProcessPriorityEnum? Priority
+        {
+            get { return Read(p => (ProcessPriorityEnum?)ProcessActions.FromPriorityClass(p.PriorityClass)); }
+        }
+
+        /// <summary>
+        /// Total CPU time consumed since the process started, or null if unavailable.
+        /// </summary>
+        public TimeSpan? TotalProcessorTime
+        {
+            get { return Read(p => (TimeSpan?)p.TotalProcessorTime); }
+        }
+
+        /// <summary>
+        /// Bytes read from storage per second, averaged over the interval since the previous read.
+        /// </summary>
+        public double? DiskReadBytesPerSecond
+        {
+            get
+            {
+                DiskIoRates rates;
+                if (_Process == null || !_DiskSampler.TryGet(out rates)) return null;
+                return Math.Round(rates.ReadBytesPerSecond, 0);
+            }
+        }
+
+        /// <summary>
+        /// Bytes written to storage per second, averaged over the interval since the previous read.
+        /// </summary>
+        public double? DiskWriteBytesPerSecond
+        {
+            get
+            {
+                DiskIoRates rates;
+                if (_Process == null || !_DiskSampler.TryGet(out rates)) return null;
+                return Math.Round(rates.WriteBytesPerSecond, 0);
+            }
+        }
+
+        /// <summary>
+        /// Total bytes read since the process started, or null if unavailable.
+        /// </summary>
+        public long? DiskReadBytesTotal
+        {
+            get
+            {
+                DiskIoTotals totals;
+                return SafeTryReadDiskIo(out totals) ? (long?)totals.ReadBytes : null;
+            }
+        }
+
+        /// <summary>
+        /// Total bytes written since the process started, or null if unavailable.
+        /// </summary>
+        public long? DiskWriteBytesTotal
+        {
+            get
+            {
+                DiskIoTotals totals;
+                return SafeTryReadDiskIo(out totals) ? (long?)totals.WriteBytes : null;
+            }
+        }
+
         #endregion
 
         #region Private-Members
 
         private Process _Process;
         private readonly DeltaSampler<TimeSpan, double> _CpuSampler;
+        private readonly DeltaSampler<DiskIoTotals, DiskIoRates> _DiskSampler;
+        private string _ExecutablePath = null;
+        private string _CommandLine = null;
+        private string _UserName = null;
+        private DateTime? _StartTimeUtc = null;
+        private bool _StartTimeRead = false;
         private bool _Disposed = false;
 
         #endregion
@@ -191,7 +334,9 @@ namespace PerformanceStatistics
         {
             _Process = process ?? throw new ArgumentNullException(nameof(process));
             _CpuSampler = new DeltaSampler<TimeSpan, double>(TryReadProcessorTime, ComputeCpuPercent);
+            _DiskSampler = new DeltaSampler<DiskIoTotals, DiskIoRates>(SafeTryReadDiskIo, DiskIoRates.Compute);
             _CpuSampler.Prime();
+            _DiskSampler.Prime();
         }
 
         #endregion
@@ -220,9 +365,18 @@ namespace PerformanceStatistics
             sb.Append("  Process Name                  : " + ProcessName + Environment.NewLine);
             sb.Append("  Process Title                 : " + ProcessTitle + Environment.NewLine);
             sb.Append("  Machine Name                  : " + MachineName + Environment.NewLine);
+            sb.Append("  Parent Process ID             : " + Format(ParentProcessId) + Environment.NewLine);
+            sb.Append("  Executable Path               : " + ExecutablePath + Environment.NewLine);
+            sb.Append("  Command Line                  : " + CommandLine + Environment.NewLine);
+            sb.Append("  User Name                     : " + UserName + Environment.NewLine);
+            sb.Append("  Start Time (UTC)              : " + (StartTimeUtc.HasValue ? StartTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture) : "N/A") + Environment.NewLine);
+            sb.Append("  State                         : " + State + Environment.NewLine);
+            sb.Append("  Priority                      : " + (Priority.HasValue ? Priority.Value.ToString() : "N/A") + Environment.NewLine);
             sb.Append("  CPU Utilization               : " + Format(CpuUtilizationPercent) + "%" + Environment.NewLine);
             sb.Append("  Handle Count                  : " + Format(HandleCount) + Environment.NewLine);
             sb.Append("  Thread Count                  : " + Format(ThreadCount) + Environment.NewLine);
+            sb.Append("  Disk Read (Bytes/sec)         : " + Format(DiskReadBytesPerSecond) + Environment.NewLine);
+            sb.Append("  Disk Write (Bytes/sec)        : " + Format(DiskWriteBytesPerSecond) + Environment.NewLine);
             sb.Append("  Memory, Private               : " + Format(PrivateMemory) + " bytes" + Environment.NewLine);
             sb.Append("  Memory, Paged System          : " + Format(PagedSystemMemory) + " bytes" + Environment.NewLine);
             sb.Append("  Memory, Peak Paged System     : " + Format(PeakPagedSystemMemory) + " bytes" + Environment.NewLine);
@@ -246,6 +400,71 @@ namespace PerformanceStatistics
         #endregion
 
         #region Internal-and-Protected-Methods
+
+        /// <summary>
+        /// Read the parent process ID. Platform hook; may throw (callers catch).
+        /// </summary>
+        /// <param name="pid">Process ID.</param>
+        /// <returns>Parent ID or null.</returns>
+        internal virtual int? ReadParentProcessId(int pid)
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Read the executable path. Platform hook; may throw (callers catch). The default uses the main module.
+        /// </summary>
+        /// <param name="pid">Process ID.</param>
+        /// <returns>Path or empty.</returns>
+        internal virtual string ReadExecutablePath(int pid)
+        {
+            Process p = _Process;
+            return p?.MainModule?.FileName ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Read the command line. Platform hook; may throw (callers catch).
+        /// </summary>
+        /// <param name="pid">Process ID.</param>
+        /// <returns>Command line or empty.</returns>
+        internal virtual string ReadCommandLine(int pid)
+        {
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Read the owning user name. Platform hook; may throw (callers catch).
+        /// </summary>
+        /// <param name="pid">Process ID.</param>
+        /// <returns>User name or empty.</returns>
+        internal virtual string ReadUserName(int pid)
+        {
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Read the scheduling state. Platform hook; may throw (callers catch).
+        /// </summary>
+        /// <param name="pid">Process ID.</param>
+        /// <returns>State.</returns>
+        internal virtual ProcessStateEnum ReadState(int pid)
+        {
+            return ProcessStateEnum.Unknown;
+        }
+
+        /// <summary>
+        /// Read cumulative storage bytes read and written. Platform hook; may throw (callers catch).
+        /// </summary>
+        /// <param name="pid">Process ID.</param>
+        /// <param name="readBytes">Bytes read.</param>
+        /// <param name="writeBytes">Bytes written.</param>
+        /// <returns>True if read.</returns>
+        internal virtual bool TryReadDiskIoBytes(int pid, out long readBytes, out long writeBytes)
+        {
+            readBytes = 0;
+            writeBytes = 0;
+            return false;
+        }
 
         /// <summary>
         /// True if the process is known to have exited. Inaccessible processes are assumed to be running.
@@ -294,6 +513,40 @@ namespace PerformanceStatistics
         #endregion
 
         #region Private-Methods
+
+        private string Cached(ref string field, Func<int, string> reader)
+        {
+            if (field != null) return field;
+            int? pid = ProcessId;
+            if (!pid.HasValue) return string.Empty;
+
+            string value;
+            try { value = reader(pid.Value) ?? string.Empty; }
+            catch { value = string.Empty; }
+
+            // Cache even an empty result: metadata that is denied once stays denied, and retrying every
+            // sampling pass for hundreds of processes is expensive.
+            field = value;
+            return value;
+        }
+
+        private bool SafeTryReadDiskIo(out DiskIoTotals totals)
+        {
+            totals = default(DiskIoTotals);
+            int? pid = ProcessId;
+            if (!pid.HasValue) return false;
+            try
+            {
+                long read, write;
+                if (!TryReadDiskIoBytes(pid.Value, out read, out write)) return false;
+                totals = new DiskIoTotals(0, 0, read, write);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         private bool TryReadProcessorTime(out TimeSpan time)
         {

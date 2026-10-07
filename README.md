@@ -27,6 +27,28 @@ A lightweight cross-platform .NET library for capturing real-time performance st
 
 If you have any issues or feedback, please file an issue here in Github. We'd love to have you help by contributing code for new features, optimization to the existing codebase, ideas for future releases, or fixes!
 
+## New in v2.2.0
+
+- **Every process, not just named ones**: `GetAllProcesses()` with executable path, command line, user, parent PID, start time, state, priority, CPU time, and disk I/O per process
+- **More system telemetry**: per-core CPU, memory total/used, swap, disk bytes/sec, per-interface network throughput, volumes, load averages, and `SystemInfo`
+- **Process actions**: `ProcessActions.Kill`, `SetPriority`, `Suspend`, `Resume` on every platform
+- **Container-aware Linux**: set `PERFSTATS_HOST_ROOT=/host` to read a host's `/proc` and `/sys` mounted into a container
+
+```csharp
+using var stats = PerformanceStatisticsFactory.Create();
+Console.WriteLine($"{stats.SystemInfo.CpuModel}, {stats.SystemInfo.LogicalProcessors} cores");
+
+stats.GetAllProcesses();               // first pass establishes the baseline for rates
+Thread.Sleep(1000);
+foreach (IProcessCounters p in stats.GetAllProcesses().OrderByDescending(p => p.CpuUtilizationPercent ?? 0).Take(10))
+    Console.WriteLine($"{p.ProcessId,7} {p.ProcessName,-24} {p.CpuUtilizationPercent,6}% {p.WorkingSetMemory / 1048576,6} MB {p.ExecutablePath}");
+
+Console.WriteLine(string.Join(" ", stats.System.PerCoreCpuUtilizationPercent));
+Console.WriteLine($"net rx {stats.System.NetworkReceivedBytesPerSecond} B/s, disk write {stats.System.TotalDiskWriteBytesPerSecond} B/s");
+```
+
+Privilege note: on macOS, CPU, disk I/O, and command line for other users' processes require running elevated; on Linux, per-process disk I/O for other users' processes does. These values are `null` otherwise.
+
 ## New in v2.1.0
 
 - **Consistent semantics on every platform**: shared base classes own sampling, units, rounding, and formatting; platform classes only supply raw readings

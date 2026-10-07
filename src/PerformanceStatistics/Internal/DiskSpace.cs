@@ -12,21 +12,16 @@ namespace PerformanceStatistics.Internal
         #region Public-Methods
 
         /// <summary>
-        /// Sum capacity and available space across the drives accepted by <paramref name="include"/>.
-        /// Drives that report an identical (format, capacity, free space) triple are counted once: on macOS,
-        /// APFS volumes in one container report the container's capacity and free space, and on Linux,
-        /// bind mounts of one filesystem report that filesystem's numbers, so summing them would multiply
-        /// the totals.
+        /// List the drives accepted by <paramref name="include"/>, counting drives that report an identical
+        /// (format, capacity, free space) triple once: on macOS, APFS volumes in one container report the
+        /// container's capacity and free space, and on Linux, bind mounts of one filesystem report that
+        /// filesystem's numbers, so listing them all would multiply the totals.
         /// </summary>
         /// <param name="include">Platform filter; receives drives that are ready and have a non-zero size.</param>
-        /// <param name="free">Available bytes.</param>
-        /// <param name="total">Capacity in bytes.</param>
-        /// <returns>True if at least one drive was counted.</returns>
-        public static bool TryGetTotals(Func<DriveInfo, bool> include, out long free, out long total)
+        /// <returns>Volumes.</returns>
+        public static List<VolumeInfo> GetVolumes(Func<DriveInfo, bool> include)
         {
-            free = 0;
-            total = 0;
-            bool any = false;
+            List<VolumeInfo> ret = new List<VolumeInfo>();
             HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
 
             DriveInfo[] drives;
@@ -36,7 +31,7 @@ namespace PerformanceStatistics.Internal
             }
             catch
             {
-                return false;
+                return ret;
             }
 
             foreach (DriveInfo drive in drives)
@@ -49,12 +44,17 @@ namespace PerformanceStatistics.Internal
                     if (include != null && !include(drive)) continue;
 
                     long available = drive.AvailableFreeSpace;
-                    string key = drive.DriveFormat + "|" + size + "|" + available;
+                    string format = drive.DriveFormat;
+                    string key = format + "|" + size + "|" + available;
                     if (!seen.Add(key)) continue;
 
-                    free += available;
-                    total += size;
-                    any = true;
+                    ret.Add(new VolumeInfo
+                    {
+                        Name = drive.Name,
+                        Format = format,
+                        TotalBytes = size,
+                        FreeBytes = available
+                    });
                 }
                 catch
                 {
@@ -62,7 +62,28 @@ namespace PerformanceStatistics.Internal
                 }
             }
 
-            return any;
+            return ret;
+        }
+
+        /// <summary>
+        /// Sum capacity and available space across the volumes returned by <see cref="GetVolumes"/>.
+        /// </summary>
+        /// <param name="include">Platform filter.</param>
+        /// <param name="free">Available bytes.</param>
+        /// <param name="total">Capacity in bytes.</param>
+        /// <returns>True if at least one drive was counted.</returns>
+        public static bool TryGetTotals(Func<DriveInfo, bool> include, out long free, out long total)
+        {
+            free = 0;
+            total = 0;
+            List<VolumeInfo> volumes = GetVolumes(include);
+            foreach (VolumeInfo volume in volumes)
+            {
+                free += volume.FreeBytes;
+                total += volume.TotalBytes;
+            }
+
+            return volumes.Count > 0;
         }
 
         #endregion

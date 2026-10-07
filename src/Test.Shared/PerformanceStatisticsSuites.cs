@@ -28,6 +28,7 @@ namespace Test.Shared
                     DisposalSuite.Build(),
                     EdgeCaseSuite.Build(),
                     ConsistencySuite.Build(),
+                    ExtendedMetricsSuite.Build(),
                 };
 
                 TestSuiteDescriptor platform = PlatformSpecificSuite.BuildForCurrentPlatform();
