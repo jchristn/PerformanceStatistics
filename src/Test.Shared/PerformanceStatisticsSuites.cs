@@ -29,6 +29,7 @@ namespace Test.Shared
                     EdgeCaseSuite.Build(),
                     ConsistencySuite.Build(),
                     ExtendedMetricsSuite.Build(),
+                    MonitoringSuite.Build(),
                 };
 
                 TestSuiteDescriptor platform = PlatformSpecificSuite.BuildForCurrentPlatform();

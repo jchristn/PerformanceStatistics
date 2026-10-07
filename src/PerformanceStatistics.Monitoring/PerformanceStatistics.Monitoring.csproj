@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>PerformanceStatistics.Monitoring</RootNamespace>
+    <PackageId>PerformanceStatistics.Monitoring</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Joel Christner</Authors>
+    <Description>Shared monitoring layer for PerformanceStatistics: host snapshots, a sampling loop, in-memory and SQLite history with downsampling, a cross-platform metric catalog, process accounting, action policies, and a client for the TaskManager server.</Description>
+    <PackageTags>performance monitoring task manager telemetry</PackageTags>
+    <PackageProjectUrl>https://github.com/jchristn/PerformanceStatistics</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jchristn/PerformanceStatistics</RepositoryUrl>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageIcon>logo.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\Assets\logo.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PerformanceStatistics\PerformanceStatistics.csproj" />
+  </ItemGroup>
+
+</Project>
