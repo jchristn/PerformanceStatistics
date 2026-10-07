@@ -19,6 +19,33 @@ Components:
 - **Web app** (`web/`): React, served by nginx in Docker.
 - **`PerformanceStatistics.Monitoring`**: the shared layer (snapshots, catalog, history, storage) that keeps all of the above consistent.
 
+## Quick start
+
+```bash
+./run-tui.sh                 # terminal app for this machine (run-tui.bat on Windows); extra arguments go to taskmgr
+sudo ./run-tui.sh            # see every process (on Windows, run run-tui.bat from an Administrator terminal)
+./run-docker.sh              # server + web app; creates docker/.env with random secrets on first run
+./run-docker.sh --linux-agent   # also monitor this Docker host (Linux)
+./run-docker.sh down | logs | ps | restart
+```
+
+`run-docker.sh` (and `run-docker.bat`) prints the web URL, the admin login, and the agent key location.
+
+### Admin privileges
+
+Every operating system restricts what one user can see of another user's processes:
+
+- **macOS** hides their CPU, disk I/O, open files, memory footprint, and command line.
+- **Linux** hides their disk I/O and open files.
+- **Windows** hides details of system and service processes.
+
+When the collector (taskmgr in local mode, or the host's agent) is not elevated:
+
+- The TUI shows a yellow header line saying that admin privileges may be required, with how to elevate on that platform. The help screen and the empty-table text say the same, and unavailable values carry the reason.
+- The web app shows a banner on every tab of that host, a note on the host card, and the reason next to each n/a value.
+
+The fix is to run elevated: `sudo`, or "Run as administrator". The agent installers already install the agent as root, a LocalSystem service, or a root launchd daemon.
+
 ## Terminal app
 
 ```bash
@@ -60,8 +87,8 @@ Run elevated (Administrator, or `sudo`) to see every process's details. Without 
 ## Server, web app, and agents (Docker Compose)
 
 ```bash
-cp docker/.env.example docker/.env        # set TASKMGR_ADMIN_PASSWORD and TASKMGR_AGENT_KEY
-docker compose -f docker/compose.yaml up -d --build
+./run-docker.sh                           # or: cp docker/.env.example docker/.env, edit it, then
+                                          #     docker compose -f docker/compose.yaml up -d --build
 open http://localhost:3000                # sign in as admin
 ```
 

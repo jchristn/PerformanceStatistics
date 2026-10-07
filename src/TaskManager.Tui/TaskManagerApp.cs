@@ -79,7 +79,7 @@ namespace TaskManager.Tui
             _App.HighlightFocusedRegion = true;
             _App.ApplyThemeToWidgets = true;
 
-            _Header = _App.AddPane("header", region => region.TopAnchored(0, 2).FillWidth().WithPadding(0));
+            _Header = _App.AddPane("header", region => region.TopAnchored(0, 3).FillWidth().WithPadding(0));
 
             _Overview = new OverviewView();
             _Processes = new ProcessesView(State);
@@ -99,7 +99,7 @@ namespace TaskManager.Tui
                 if (Tabs.ActiveIndex == 1) FocusProcessTable();
                 RefreshActive();
             };
-            _App.AddWidget("main", Tabs, region => region.FillWidth().FillHeight(2, 1).WithPadding(0));
+            _App.AddWidget("main", Tabs, region => region.FillWidth().FillHeight(3, 1).WithPadding(0));
 
             StatusBar footer = _App.AddWidget("footer", new StatusBar { RightText = "taskmgr" }, region => region.BottomAnchored(0, 1).FillWidth().WithPadding(0));
             _App.BindKeyHints(footer)
@@ -185,8 +185,8 @@ namespace TaskManager.Tui
             line2.Append(", every ").Append(MetricFormatter.Number(_Source.Interval.TotalSeconds)).Append("s");
             line2.Append(", window ").Append(MetricFormatter.Duration(State.WindowSeconds)).Append("[/]");
             if (_Source.Paused) line2.Append("  [yellow]PAUSED[/]");
-            if (!h.Elevated) line2.Append("  [dim]not elevated: some processes show n/a[/]");
             _Header.WriteMarkup(line2.ToString());
+            _Header.WriteMarkup(h.Elevated ? string.Empty : "[yellow]" + Markup.Escape(ElevationHint(h)) + "[/]");
         }
 
         private void BindKeys()
@@ -236,6 +236,19 @@ namespace TaskManager.Tui
                 ProcessSnapshot p = State.SelectedProcess();
                 _ = ActOnSelectedAsync(p != null && p.State == "Stopped" ? ProcessActionKindEnum.Resume : ProcessActionKindEnum.Suspend);
             });
+        }
+
+        /// <summary>
+        /// Short, platform-specific hint shown when the collector is not elevated.
+        /// </summary>
+        /// <param name="host">Host facts.</param>
+        /// <returns>Hint.</returns>
+        public static string ElevationHint(HostInfo host)
+        {
+            string how = String.Equals(host.Platform, "Windows", StringComparison.OrdinalIgnoreCase)
+                ? "run as Administrator"
+                : "run with sudo";
+            return "Not elevated: some processes may be hidden or show n/a; admin privileges may be required (" + how + ")";
         }
 
         private void FocusProcessTable()
@@ -329,7 +342,12 @@ namespace TaskManager.Tui
             sb.AppendLine("Every metric means the same thing on Windows, Linux, and macOS.");
             sb.AppendLine("CPU % is of the whole machine (all cores). n/a means the platform");
             sb.AppendLine("does not provide the value, or the process belongs to another user");
-            sb.Append("and taskmgr is not running elevated.");
+            sb.AppendLine("and the collector is not running with admin privileges.");
+            sb.AppendLine();
+            sb.Append("If processes or values are missing, admin privileges may be required: ");
+            sb.Append(String.Equals(State.Host.Platform, "Windows", StringComparison.OrdinalIgnoreCase)
+                ? "run taskmgr (or the agent) as Administrator."
+                : "run taskmgr (or the agent) as root, for example: sudo ./run-tui.sh");
             _ = _App.ShowAsync(new MessageModal("taskmgr help", sb.ToString(), new[] { "Close" }));
         }
 

@@ -38,9 +38,11 @@ This repository also contains **TaskManager**, one task manager for Windows, Lin
 Both front ends show the same processes, columns, and per-platform `n/a` reasons, and chart CPU (total and per core), memory, disk, and network over time.
 
 ```bash
-dotnet run --project src/TaskManager.Tui                 # terminal task manager for this machine
-cp docker/.env.example docker/.env && docker compose -f docker/compose.yaml up -d --build   # server + web on :3000
+./run-tui.sh            # terminal task manager for this machine (run-tui.bat on Windows)
+./run-docker.sh         # server + web app on http://localhost:3000 (run-docker.bat on Windows)
 ```
+
+Some processes are only visible with admin privileges. Use `sudo ./run-tui.sh`, or run `run-tui.bat` from a terminal opened with "Run as administrator". Install agents as root or Administrator. Both apps show a notice when the collector is not elevated.
 
 See [docs/TASKMANAGER.md](docs/TASKMANAGER.md) and the plan in [USER_APPS.md](USER_APPS.md).
 

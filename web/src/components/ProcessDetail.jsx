@@ -12,7 +12,7 @@ const USAGE = ['process.cpu', 'process.cputime', 'process.memory.workingset', 'p
   'process.disk.read', 'process.disk.write', 'process.disk.read.total', 'process.disk.write.total', 'process.handles', 'process.threads'];
 const PRIORITIES = ['Idle', 'BelowNormal', 'Normal', 'AboveNormal', 'High', 'RealTime'];
 
-export default function ProcessDetail({ hostId, process, catalog, platform, history, range, allowedActions, isAdmin, onClose, onNotify }) {
+export default function ProcessDetail({ hostId, process, catalog, platform, history, range, allowedActions, isAdmin, onClose, onNotify, elevated = true }) {
   const [pending, setPending] = useState(null);
   const [priority, setPriority] = useState('BelowNormal');
   const key = processKey(process);
@@ -30,7 +30,7 @@ export default function ProcessDetail({ hostId, process, catalog, platform, hist
     const m = byId(catalog, id);
     const v = processValue(process, id);
     if (v === null || v === undefined || v === '') {
-      const reason = unavailableReason(catalog, id, platform);
+      const reason = unavailableReason(catalog, id, platform) || (elevated ? null : 'admin privileges may be required');
       return <span className="na">n/a{reason ? ` (${reason})` : ''}</span>;
     }
     if (id === 'process.start') return new Date(v).toLocaleString();

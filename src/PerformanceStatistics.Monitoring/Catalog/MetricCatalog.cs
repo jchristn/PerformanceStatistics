@@ -29,7 +29,7 @@ namespace PerformanceStatistics.Monitoring
         private const string Windows = "Windows";
         private const string Linux = "Linux";
         private const string Mac = "Mac";
-        private const string ElevationNote = "Null for other users' processes unless the collector runs elevated.";
+        private const string ElevationNote = "Hidden for other users' processes; admin/root privileges may be required (run as Administrator or with sudo).";
 
         private static readonly List<MetricDefinition> _All = Build();
         private static readonly Dictionary<string, MetricDefinition> _ById = _All.ToDictionary(m => m.Id, StringComparer.Ordinal);
@@ -229,7 +229,7 @@ namespace PerformanceStatistics.Monitoring
             m.Add(Sys(MetricIds.SystemProcesses, "Processes", "Procs", MetricUnitEnum.Count, "Visible processes.", s => D(s.ProcessCount)));
             m.Add(Sys(MetricIds.SystemThreads, "Threads", "Threads", MetricUnitEnum.Count, "Threads across visible processes.", s => D(s.ThreadCount)));
             m.Add(Sys(MetricIds.SystemHandles, "Handles / descriptors", "Handles", MetricUnitEnum.Count, "Open handles (Windows) or file descriptors (Linux, macOS) across processes that report them.", s => D(s.HandleCount),
-                Avail(Linux, P, "File descriptors; other users' processes need elevation.", Mac, P, "File descriptors; other users' processes need elevation.")));
+                Avail(Linux, P, "File descriptors; other users' processes need admin/root privileges.", Mac, P, "File descriptors; other users' processes need admin/root privileges.")));
             m.Add(Sys(MetricIds.SystemUptime, "Uptime", "Uptime", MetricUnitEnum.Seconds, "Time since boot.", s => s.UptimeSeconds));
 
             // Process (text)

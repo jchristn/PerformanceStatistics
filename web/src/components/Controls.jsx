@@ -55,3 +55,17 @@ export function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm,
 export function NotAvailable({ reason }) {
   return <span className="na" title={reason || 'Not available'}>n/a</span>;
 }
+
+// Shown when a host's collector lacks admin/root privileges: some processes or values may be hidden.
+export function ElevationNotice({ platform, compact }) {
+  const how = platform === 'Windows'
+    ? 'Run the agent (or taskmgr) as Administrator.'
+    : 'Run the agent (or taskmgr) as root, for example with sudo.';
+  if (compact) return <span className="elevation-inline" title={how}>admin privileges may be required</span>;
+  return (
+    <div className="notice warn" role="note">
+      <strong>Some processes or values may be missing.</strong> This host&apos;s collector is not running with admin privileges,
+      so other users&apos; processes can be hidden or show n/a. {how}
+    </div>
+  );
+}

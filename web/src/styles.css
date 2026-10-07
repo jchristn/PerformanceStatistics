@@ -189,6 +189,9 @@ table.simple tr.selected { background: var(--selected); }
 .toast.ok { border-color: var(--ok); }
 .toast.error { border-color: var(--danger); }
 .foot { margin-top: 16px; }
+.notice { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; background: var(--surface); }
+.notice.warn { border-color: var(--warn); border-left-width: 4px; }
+.elevation-inline { color: var(--warn); cursor: help; }
 pre { background: var(--surface-2); padding: 10px; border-radius: 6px; overflow-x: auto; }
 
 @media (max-width: 640px) {

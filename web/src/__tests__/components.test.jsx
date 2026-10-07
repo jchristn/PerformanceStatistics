@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Bar, StatTile } from '../components/Controls.jsx';
+import { Bar, ElevationNotice, StatTile } from '../components/Controls.jsx';
 import Login from '../pages/Login.jsx';
 
 describe('components', () => {
@@ -19,5 +19,13 @@ describe('components', () => {
     render(<Login />);
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
     expect(screen.getByLabelText('Password')).toBeTruthy();
+  });
+
+  it('explains that admin privileges may be required, per platform', () => {
+    const { container, rerender } = render(<ElevationNotice platform="Windows" />);
+    expect(container.textContent).toContain('not running with admin privileges');
+    expect(container.textContent).toContain('as Administrator');
+    rerender(<ElevationNotice platform="Linux" />);
+    expect(container.textContent).toContain('sudo');
   });
 });

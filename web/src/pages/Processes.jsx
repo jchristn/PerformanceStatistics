@@ -63,10 +63,10 @@ export default function Processes(props) {
         </div>
       )}
       <div className="split">
-        <ProcessTable processes={rows} catalog={catalog} platform={platform} columns={columns} selectedKey={selected} onSelect={(p) => setSelected(processKey(p))} />
+        <ProcessTable processes={rows} catalog={catalog} platform={platform} columns={columns} selectedKey={selected} onSelect={(p) => setSelected(processKey(p))} elevated={props.elevated !== false} />
         {current && (
           <ProcessDetail process={current} catalog={catalog} platform={platform} history={props.history} hostId={hostId} range={range}
-                         allowedActions={props.allowedActions} isAdmin={props.isAdmin} onClose={() => setSelected(null)} onNotify={props.notify} />
+                         allowedActions={props.allowedActions} isAdmin={props.isAdmin} onClose={() => setSelected(null)} onNotify={props.notify} elevated={props.elevated !== false} />
         )}
       </div>
       {showExited && (

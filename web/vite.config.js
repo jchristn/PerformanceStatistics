@@ -15,5 +15,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: false,
+    // e2e/ holds Playwright specs, run with `npm run e2e` against a live stack.
+    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
   },
 });

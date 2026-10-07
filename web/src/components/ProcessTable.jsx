@@ -24,7 +24,7 @@ function cellStyle(id) {
 
 // Virtualized, sortable process table. Columns come from the catalog; unavailable values show "n/a"
 // with the platform's reason as a tooltip.
-export default function ProcessTable({ processes, catalog, platform, columns, selectedKey, onSelect }) {
+export default function ProcessTable({ processes, catalog, platform, columns, selectedKey, onSelect, elevated = true }) {
   const [sorting, setSorting] = useState([{ id: 'process.cpu', desc: true }]);
 
   const columnDefs = useMemo(() => columns.map((id) => {
@@ -108,7 +108,7 @@ export default function ProcessTable({ processes, catalog, platform, columns, se
           })}
         </tbody>
       </table>
-      {rows.length === 0 && <div className="empty">No processes match.</div>}
+      {rows.length === 0 && <div className="empty">No processes match.{elevated ? '' : ' Some processes may be hidden: admin privileges may be required.'}</div>}
     </div>
   );
 }

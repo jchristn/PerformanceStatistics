@@ -66,7 +66,7 @@ namespace Test.Tui
                     h.App.ProcessTable.Select(h.App.ProcessTable.Rows.ToList().FindIndex(p => p.Name == "rootproc"));
                     h.Pump();
                     screen = h.Screen();
-                    Must(screen.Contains("n/a (Null for other users"), "Reason for an unavailable value", screen);
+                    Must(screen.Contains("n/a (Hidden for other users"), "Reason for an unavailable value", screen);
                 }),
 
                 Case("KillAsksThenActs", "k asks for confirmation and then sends a Kill request for the selected process", h =>
@@ -114,6 +114,21 @@ namespace Test.Tui
                     h.Emit();
                     h.Key("?");
                     Must(h.Screen().Contains("taskmgr help"), "Help modal", h.Screen());
+                }),
+
+                Case("ElevationHintWhenNotElevated", "A non-elevated collector shows the admin-privileges hint in the header and help", h =>
+                {
+                    h.Source.HostInfo.Elevated = false;
+                    h.Emit();
+                    Must(h.Screen().Contains("admin privileges may be required (run with sudo)"), "Header hint", h.Screen());
+                    h.Key("?");
+                    Must(h.Screen().Contains("sudo ./run-tui.sh"), "Help explains how to elevate", h.Screen());
+                }),
+
+                Case("NoElevationHintWhenElevated", "An elevated collector shows no admin-privileges hint", h =>
+                {
+                    h.Emit();
+                    Must(!h.Screen().Contains("admin privileges may be required"), "No hint when elevated", h.Screen());
                 }),
 
                 Case("PauseShowsInHeader", "space pauses and the header says so", h =>

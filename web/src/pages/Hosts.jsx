@@ -32,7 +32,7 @@ export default function Hosts() {
               <div className="muted small">{h.info.cpuModel || 'CPU'} · {h.info.logicalProcessors} cores · {h.info.totalMemoryBytes ? bytes(h.info.totalMemoryBytes) : 'n/a'} RAM</div>
               <div className="host-metric"><span>CPU</span><Bar percent={h.cpuPercent} /><span className="num">{format(h.cpuPercent, 'Percent')}</span></div>
               <div className="host-metric"><span>Memory</span><Bar percent={memPct} /><span className="num">{format(memPct, 'Percent')}</span></div>
-              <div className="muted small">{h.lastSeenUtc ? `Last seen ${new Date(h.lastSeenUtc).toLocaleString()}` : 'Never seen'}{h.info.elevated ? '' : ' · agent not elevated'}</div>
+              <div className="muted small">{h.lastSeenUtc ? `Last seen ${new Date(h.lastSeenUtc).toLocaleString()}` : 'Never seen'}{h.info.elevated ? '' : ' · not elevated: admin privileges may be required to see every process'}</div>
             </Link>
           );
         })}

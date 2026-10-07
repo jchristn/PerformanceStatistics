@@ -3,7 +3,7 @@ import { Link, NavLink, Route, Routes, useParams } from 'react-router-dom';
 import { api, getSession } from '../api.js';
 import { bytes, duration, format } from '../format.js';
 import { RANGES, useCatalog, useHostStream, usePolling } from '../hooks/useData.js';
-import { RangePicker } from '../components/Controls.jsx';
+import { ElevationNotice, RangePicker } from '../components/Controls.jsx';
 import Overview from './Overview.jsx';
 import Processes from './Processes.jsx';
 import Network from './Network.jsx';
@@ -32,7 +32,7 @@ export default function Host() {
 
   const info = host?.info;
   const ctx = {
-    hostId, catalog, latest, history, range, platform: info?.platform,
+    hostId, catalog, latest, history, range, platform: info?.platform, elevated: info ? info.elevated : true,
     allowedActions: host?.allowedActions || [], isAdmin: !!session?.isAdmin,
     notify: (text, kind) => setToast({ text, kind }),
   };
@@ -47,7 +47,7 @@ export default function Host() {
             <div className="muted small">
               {info.operatingSystem} · {info.architecture} · {info.cpuModel || 'CPU'} · {info.logicalProcessors} cores · {info.totalMemoryBytes ? bytes(info.totalMemoryBytes) : 'n/a'} RAM
               {latest?.system?.uptimeSeconds != null && <> · up {duration(latest.system.uptimeSeconds)}</>}
-              {!info.elevated && <> · <span title="The agent is not running elevated, so other users' processes show n/a for some fields.">agent not elevated</span></>}
+              {!info.elevated && <> · <ElevationNotice platform={info.platform} compact /></>}
             </div>
           )}
         </div>
@@ -60,6 +60,7 @@ export default function Host() {
         ))}
       </nav>
 
+      {info && !info.elevated && <ElevationNotice platform={info.platform} />}
       {!latest && <p className="muted">Waiting for data from this host…</p>}
       {latest && catalog && (
         <Routes>

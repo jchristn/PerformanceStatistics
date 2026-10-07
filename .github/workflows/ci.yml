@@ -83,6 +83,7 @@ jobs:
         env:
           TASKMGR_WEB_URL: http://localhost:3000
           TASKMGR_E2E_HOST: ci-host
+          TASKMGR_E2E_ACTIONS: '1'
         run: |
           npm ci
           npx playwright install --with-deps chromium

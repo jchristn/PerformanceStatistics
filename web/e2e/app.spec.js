@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 
 const password = process.env.TASKMGR_ADMIN_PASSWORD || 'change-me';
 const hostId = process.env.TASKMGR_E2E_HOST || 'docker-host';
+// Set TASKMGR_E2E_ACTIONS=1 when the monitored host's agent allows Kill (TASKMGR_DOCKER_HOST_ACTIONS).
+const actionsAllowed = process.env.TASKMGR_E2E_ACTIONS === '1';
 
 test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => { throw e; });
@@ -36,7 +38,9 @@ test('processes: filter, open details, and see history charts', async ({ page })
   await expect(detail).toBeVisible();
   await expect(detail.getByText('/app/taskmgr-agent').first()).toBeVisible();
   await expect(detail.locator('.uplot')).toHaveCount(3);
-  await expect(detail.getByRole('button', { name: 'Kill', exact: true })).toBeEnabled();
+  const kill = detail.getByRole('button', { name: 'Kill', exact: true });
+  if (actionsAllowed) await expect(kill).toBeEnabled();
+  else await expect(kill).toBeDisabled();
 });
 
 test('network, disks, accounting, and audit tabs render', async ({ page }) => {

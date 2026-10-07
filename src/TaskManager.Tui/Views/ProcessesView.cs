@@ -60,7 +60,7 @@ namespace TaskManager.Tui
 
             Table = new DataTable<ProcessSnapshot>();
             Table.KeySelector = p => p.Key;
-            Table.EmptyText = "No processes match.";
+            Table.EmptyText = _State.Host.Elevated ? "No processes match." : "No processes match. Some processes may be hidden: admin privileges may be required.";
             Table.StretchLastColumn = true;
             Table.RowStyle = p => p.State == "Stopped" || p.State == "Zombie" ? (CellStyle?)CellStyle.Default.WithAttribute(CellAttributes.Dim, true) : null;
             for (int i = 0; i < _Columns.Length; i++)
@@ -172,6 +172,7 @@ namespace TaskManager.Tui
                 {
                     string reason = _State.Unavailable(id);
                     if (reason != null) text += " (" + reason + ")";
+                    else if (!_State.Host.Elevated) text += " (admin privileges may be required)";
                 }
 
                 _Details.Set(MetricCatalog.Get(id).Name, text);
@@ -189,6 +190,7 @@ namespace TaskManager.Tui
         {
             if (!String.IsNullOrEmpty(value)) return value;
             string reason = _State.Unavailable(metricId);
+            if (reason == null && !_State.Host.Elevated) reason = "admin privileges may be required";
             return MetricFormatter.NotAvailable + (reason != null ? " (" + reason + ")" : string.Empty);
         }
 
