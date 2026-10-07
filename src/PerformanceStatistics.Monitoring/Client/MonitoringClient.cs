@@ -190,6 +190,7 @@ namespace PerformanceStatistics.Monitoring
             {
                 using (ClientWebSocket ws = new ClientWebSocket())
                 {
+                    ws.Options.DangerousDeflateOptions = new WebSocketDeflateOptions();
                     try
                     {
                         await ws.ConnectAsync(ub.Uri, token).ConfigureAwait(false);
