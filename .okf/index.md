@@ -18,7 +18,7 @@ okf_version: "0.2"
 # cat_muyjh8gh_3Sv0b6Ggpoz9xqbqbI4
 
 * [Code style: getters never throw, null means unavailable, invariant formatting, explicit types, _PascalCase fields](cat_muyjh8gh_3Sv0b6Ggpoz9xqbqbI4/never-throw-return-null.md) - Getters return null (unavailable), never throw; wrong-OS constructors throw PlatformNotSupportedException; format with InvariantCulture; no var; _PascalCase private fields; #region blocks; XML docs on everything.
-* [This scope's OKF bundle is committed at .okf/ and kept in sync by agents](cat_muyjh8gh_3Sv0b6Ggpoz9xqbqbI4/okf-mirror-in-repo.md) - The NotDory server is remote and can't see the checkout (filesystemMirror off), so after every memory_upsert/delete agents rewrite .okf/<categoryId>/<slug>.md and regenerate .okf/index.md (OKF v0.2), committed with the code it describes.
+* [This scope's OKF bundle is committed at .okf/ and regenerated with scripts/okf-export.py](cat_muyjh8gh_3Sv0b6Ggpoz9xqbqbI4/okf-mirror-in-repo.md) - The NotDory server can't see the checkout (filesystemMirror off), so after memory changes agents save memory_enumerate output to JSON and run scripts/okf-export.py to rewrite .okf/ (OKF v0.2), committed with the code it describes.
 
 # cat_muyjha72_jbjNYfjl2iB8LMFXXdV
 
@@ -28,12 +28,15 @@ okf_version: "0.2"
 
 # cat_muyjhbl9_Pj4XKKyhDkDhX8xbuOW
 
+* [USER_APPS.md: TUIKit terminal app and React + C# web app over a shared Monitoring layer, with native agents](cat_muyjhbl9_Pj4XKKyhDkDhX8xbuOW/user-apps-plan.md) - Plan (2026-10-07) for cross-platform Task Manager apps: PerformanceStatistics.Monitoring shared layer, TaskManager.Tui (TUIKit 1.5.* package), native TaskManager.Agent per host, TaskManager.Server (ASP.NET Core + SQLite) and React/Vite web via Docker Compose.
+* [User requirement: chart process list and system telemetry over time, in the TUI or the web app](cat_muyjhbl9_Pj4XKKyhDkDhX8xbuOW/user-apps-telemetry-requirements.md) - The maintainer wants, over time and in both TUI and web: per-process PID, memory, disk I/O, CPU, handle count, thread count, executable path plus extra metadata; aggregate and per-CPU utilization; memory; network; disk I/O; any other useful telemetry.
 * [v2.0.1 (2026-08-15): snapshot MonitoredProcesses and ActiveTcpConnections once in ToString()](cat_muyjhbl9_Pj4XKKyhDkDhX8xbuOW/v2-0-1-tostring-race-fix.md) - Fixed IndexOutOfRangeException in XPerformanceStatistics.ToString() when the TCP table changed between .Length and indexing; the fix copies each volatile collection into a local once.
 * [v2.1.0 (2026-10-07): shared base classes, one sampling model, native APIs per OS](cat_muyjhbl9_Pj4XKKyhDkDhX8xbuOW/v2-1-0-consistency-refactor.md) - Refactored to PerformanceStatisticsBase/SystemCountersBase/ProcessCountersBase + DeltaSampler so metrics mean the same thing on every OS; macOS moved from CLI tools to native APIs; Windows from per-read counters to kernel32 + reused counters.
 * [v2.0.0 (2026-01-05): cross-platform via interfaces, a factory, and per-OS backends with nullable metrics](cat_muyjhbl9_Pj4XKKyhDkDhX8xbuOW/v2-cross-platform-design.md) - v2 introduced IPerformanceStatistics/ISystemCounters/IProcessCounters, PerformanceStatisticsFactory, and Linux/Mac backends while keeping the Windows classes usable directly.
 
 # cat_muyjhdkh_cnaoGm7oDvaV9bOYYyd
 
+* [Phase 0 library work for the user apps (target v2.2.0)](cat_muyjhdkh_cnaoGm7oDvaV9bOYYyd/library-gaps-for-user-apps.md) - Add all-process enumeration with executable path and metadata, per-process disk I/O/faults/context switches, per-core CPU, memory totals/swap, per-interface network, per-disk/per-volume detail, load/population/uptime, TCP owning PID, process actions, and a container-aware Linux root.
 * [The three XPerformanceStatistics orchestrators are copy-pasted (~280 lines each)](cat_muyjhdkh_cnaoGm7oDvaV9bOYYyd/orchestrator-duplication.md) - Windows/Linux/MacPerformanceStatistics duplicate MonitoredProcesses caching, TCP logic, GetActiveTcpConnections, ToString, and Dispose; consider an abstract base class with a CreateProcessCounters(Process) hook. (deprecated)
 * [Private field casing differs: Windows uses _PascalCase, Linux/Mac use _camelCase](cat_muyjhdkh_cnaoGm7oDvaV9bOYYyd/private-field-naming-inconsistency.md) - Windows classes use _Disposed/_Lock/_Process; Linux and Mac classes use _disposed/_lock/_process. Match the file you are editing; ask the maintainer before unifying. (deprecated)
 * [Docs drift: CHANGELOG says v2.0.0 and the README describes the old 54-test Test.Automated](cat_muyjhdkh_cnaoGm7oDvaV9bOYYyd/readme-changelog-drift.md) - The csproj is 2.0.1, but CHANGELOG.md "Current Version" is still v2.0.0 with no 2.0.1 entry; the README "Example Projects" section omits Test.Shared/Xunit/Nunit and the Touchstone setup. (deprecated)
