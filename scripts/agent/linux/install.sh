@@ -20,6 +20,12 @@ REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
 case "$(uname -m)" in aarch64|arm64) RID=linux-arm64 ;; *) RID=linux-x64 ;; esac
 DEST=/opt/taskmgr-agent
 
+command -v dotnet >/dev/null 2>&1 || { echo "dotnet was not found on root's PATH (sudo resets PATH). Try: sudo env \"PATH=\$PATH\" $0 ..." >&2; exit 1; }
+
+# Stop a running agent first: Linux refuses to overwrite a running executable ("Text file busy"),
+# and a restart is needed anyway for a new binary or settings to take effect.
+systemctl stop taskmgr-agent 2>/dev/null || true
+
 dotnet publish "$REPO/src/TaskManager.Agent" -c Release -f net10.0 -r "$RID" --self-contained true -p:PublishSingleFile=true -o "$DEST"
 
 umask 077
@@ -49,4 +55,4 @@ UNIT
 
 systemctl daemon-reload
 systemctl enable --now taskmgr-agent
-systemctl --no-pager status taskmgr-agent | head -5
+systemctl --no-pager status taskmgr-agent | head -5 || true

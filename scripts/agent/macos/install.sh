@@ -21,6 +21,11 @@ case "$(uname -m)" in arm64) RID=osx-arm64 ;; *) RID=osx-x64 ;; esac
 DEST=/usr/local/taskmgr-agent
 PLIST=/Library/LaunchDaemons/com.taskmgr.agent.plist
 
+command -v dotnet >/dev/null 2>&1 || { echo "dotnet was not found on root's PATH. Try: sudo env \"PATH=\$PATH\" $0 ..." >&2; exit 1; }
+
+# Stop a running agent before replacing its binary.
+launchctl bootout system "$PLIST" 2>/dev/null || true
+
 dotnet publish "$REPO/src/TaskManager.Agent" -c Release -f net10.0 -r "$RID" --self-contained true -p:PublishSingleFile=true -o "$DEST"
 
 cat > "$PLIST" <<PLISTEOF
@@ -46,6 +51,5 @@ cat > "$PLIST" <<PLISTEOF
 PLISTEOF
 chmod 600 "$PLIST"
 
-launchctl bootout system "$PLIST" 2>/dev/null || true
 launchctl bootstrap system "$PLIST"
 echo "TaskManager agent installed; logs in /var/log/taskmgr-agent.log"

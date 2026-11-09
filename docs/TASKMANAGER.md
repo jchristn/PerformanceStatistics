@@ -104,9 +104,13 @@ Run the agent natively on each machine you want to watch. It must run natively: 
 |---|---|
 | Linux (systemd) | `sudo scripts/agent/linux/install.sh --server http://monitor:8080 --key <agent key> [--allowed-actions Kill,Suspend,Resume,SetPriority]` |
 | macOS (launchd) | `sudo scripts/agent/macos/install.sh --server http://monitor:8080 --key <agent key> [...]` |
-| Windows (service) | `scripts\agent\windows\install.bat http://monitor:8080 <agent key> "" Kill,Suspend,Resume` |
+| Windows (service) | `scripts\agent\windows\install.bat http://monitor:8080 <agent key> "" "Kill,Suspend,Resume"` (quote the action list: cmd.exe splits unquoted arguments at commas) |
+| WSL 2 | `scripts/agent/wsl2/install.sh --server http://monitor:8080 --key <agent key> [...]` (as your normal user; it calls sudo) |
+| WSL 1 | `scripts/agent/wsl/install.sh --server http://monitor:8080 --key <agent key> [...]` |
 
-Each folder also has an uninstall script. To monitor the Linux Docker host itself, add `--profile linux-agent` to the compose command. That agent runs with `pid: host`, `network_mode: host`, `SYS_PTRACE`, and the host's `/proc` and `/sys` mounted at `/host`, and it sets `PERFSTATS_HOST_ROOT`.
+Each folder also has an uninstall script and a reinstall script (uninstall, then install with the same arguments).
+
+The WSL agent reports the WSL environment (on WSL 2, the Linux VM and the distro's processes), not the Windows host; to monitor Windows, install the Windows agent from an elevated prompt. With systemd enabled in the distro (`[boot] systemd=true` in `/etc/wsl.conf`) the WSL agent is a systemd service; otherwise a hidden launcher in the Windows Startup folder starts it at Windows login. Its host id defaults to `<hostname>-wsl`, because WSL uses the Windows computer name as its hostname. To monitor the Linux Docker host itself, add `--profile linux-agent` to the compose command. That agent runs with `pid: host`, `network_mode: host`, `SYS_PTRACE`, and the host's `/proc` and `/sys` mounted at `/host`, and it sets `PERFSTATS_HOST_ROOT`.
 
 ### Settings
 
