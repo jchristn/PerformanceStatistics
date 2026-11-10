@@ -112,6 +112,9 @@ echo "[1/5] Checking prerequisites..."
 if [ "$(id -u)" -ne 0 ]; then
     command -v sudo >/dev/null 2>&1 || die "sudo was not found. Run this script as root."
 fi
+# The .NET SDK needs ICU to build the agent (the agent itself runs with invariant globalization).
+# Install it now if it is missing (INSTALL_SYSTEM_PACKAGES=0 only reports it), before the dotnet check.
+wsl_install_deps "The TaskManager agent build" icu
 # sudo resets PATH: also look in the invoking user's ~/.dotnet and the usual install directories.
 DOTNET="$(command -v dotnet 2>/dev/null || true)"
 if [ -z "$DOTNET" ] && [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ]; then

@@ -66,6 +66,8 @@ if name == 'pkill':
 if name == 'docker':
     sys.exit(0)
 if name == 'dotnet':
+    if args and args[0].endswith('taskmgr.dll') and os.environ.get('MOCK_ENV_OUT'):
+        pathlib.Path(os.environ['MOCK_ENV_OUT']).write_text(json.dumps({'PATH': os.environ['PATH'], 'BROWSER': os.environ.get('BROWSER')}))
     if args == ['--list-sdks']:
         print(os.environ.get('MOCK_SDKS', '8.0.425 [mock]\\n10.0.401 [mock]')); sys.exit(0)
     if args[:1] == ['publish']:
@@ -429,6 +431,80 @@ with tempfile.TemporaryDirectory(prefix='perfstats scripts ') as temp:
     check(p.returncode == 0 and 'nothing answers at http://localhost:8080' in p.stderr
           and "TASKMGR__SERVER='http://localhost:8080'" in (sysroot / 'etc/taskmgr-agent.env').read_text(), p.stderr)
     run('wsl2', 'uninstall')
+
+    # ICU. A fake ldconfig (off PATH, so every other run has no ldconfig and skips the checks) reports
+    # MOCK_LDCACHE until the fake apt-get has "installed" something, then a cache with libicuuc.
+    # apt-get and apt-cache live in their own directory, added to PATH only here (sudo is the fake above).
+    (temp / 'ldc').mkdir()
+    (temp / 'apt').mkdir()
+    have_icu = '\tlibicuuc.so.74 (libc6,x86-64) => /usr/lib/x86_64-linux-gnu/libicuuc.so.74'
+    i386_icu = '\tlibicuuc.so.74 (libc6) => /usr/lib/i386-linux-gnu/libicuuc.so.74'
+    no_icu = '\tlibc.so.6 (libc6,x86-64) => /lib/libc.so.6'
+    apt_done = temp / 'apt-installed'
+    for d, name, body in [('ldc', 'ldconfig', f'#!/bin/sh\nif [ -f "{apt_done}" ]; then printf "%s\\n" "{have_icu}"; else printf "%s\\n" "$MOCK_LDCACHE"; fi\n'),
+                          ('apt', 'apt-get', f'#!/bin/sh\necho "[\\"apt-get\\", \\"$*\\"]" >> "$CALL_LOG"\n[ "$1" = install ] && touch "{apt_done}"\nexit 0\n'),
+                          ('apt', 'apt-cache', '#!/bin/sh\nprintf "libicu-dev\\nlibicu74\\nlibicu72\\n"\n')]:
+        (temp / d / name).write_text(body)
+        (temp / d / name).chmod(0o755)
+    ldconfig = str(temp / 'ldc/ldconfig')
+    apt_path = f'{temp / "apt"}:{fakes}:/usr/bin:/bin'
+
+    def run_icu(platform, a, *args, **env):
+        apt_done.unlink(missing_ok=True)
+        var = 'NATIVE_LDCONFIG' if platform == 'linux' else 'WSL_LDCONFIG'
+        p, c = run(platform, a, *args, **{var: ldconfig, **env})
+        return p, [x for x in c if x[0] == 'apt-get'], [x for x in c if x[:2] == ['dotnet', 'publish']]
+
+    for platform in ['linux', 'wsl', 'wsl2']:
+        for a in ['install', 'reinstall']:
+            for cache in [no_icu, i386_icu]:
+                # The SDK needs ICU to build the agent: install-type scripts install it, then build.
+                p, apt, build = run_icu(platform, a, *ARGS, MOCK_LDCACHE=cache, PATH=apt_path)
+                check(p.returncode == 0 and apt == [['apt-get', 'update -qq'], ['apt-get', 'install -y -q libicu74']] and build,
+                      platform, a, p.stderr, apt)
+                run(platform, 'uninstall')
+            for env in [dict(INSTALL_SYSTEM_PACKAGES='0', PATH=apt_path), {}]:
+                p, apt, build = run_icu(platform, a, *ARGS, MOCK_LDCACHE=no_icu, **env)
+                check(p.returncode == 1 and 'needs system packages that are not installed' in p.stderr
+                      and 'libicu-dev' in p.stderr and not apt and not build and tree() == [], platform, a, env, p.stderr)
+            p, apt, build = run_icu(platform, a, '--help', MOCK_LDCACHE=no_icu, PATH=apt_path)
+            check(p.returncode == 0 and not apt and not build, platform, a)
+            for env in [dict(MOCK_LDCACHE=have_icu), dict(MOCK_LDCACHE=no_icu, DOTNET_SYSTEM_GLOBALIZATION_INVARIANT='1')]:
+                p, apt, build = run_icu(platform, a, *ARGS, PATH=apt_path, **env)
+                check(p.returncode == 0 and not apt and build, platform, a, env, p.stderr)
+                run(platform, 'uninstall')
+        # uninstall needs no dotnet, so it neither checks nor installs ICU.
+        p, apt, build = run_icu(platform, 'uninstall', MOCK_LDCACHE=no_icu, PATH=apt_path)
+        check(p.returncode == 0 and not apt, platform, p.stderr)
+    check(tree() == [], tree())
+
+    # run-tui.sh is a launcher: it only checks. Missing ICU stops it before building, and it never installs.
+    e = dict(base_env, MOCK_UNAME='Linux', DOTNET=str(fakes / 'dotnet'), NATIVE_LDCONFIG=ldconfig, PATH=apt_path)
+    for cache in [no_icu, i386_icu]:
+        log.unlink(missing_ok=True)
+        apt_done.unlink(missing_ok=True)
+        p = subprocess.run(['bash', str(repo / 'run-tui.sh')], env=dict(e, MOCK_LDCACHE=cache), capture_output=True, text=True)
+        calls = [json.loads(x) for x in log.read_text().splitlines()] if log.exists() else []
+        check(p.returncode == 1 and 'needs ICU (libicu)' in p.stderr and 'sudo apt install libicu74' in p.stderr
+              and not any(x[0] in ('apt-get', 'sudo') or x[1:2] == ['build'] for x in calls), p.stderr, calls)
+    # With ICU, the clipboard note appears on Linux when no wl-copy/xclip/xsel exists; under WSL the TUI
+    # also gets the Windows PATH entries (after the Linux ones) and BROWSER=wslview.
+    (temp / 'wslu').mkdir()
+    (temp / 'wslu/wslview').write_text('#!/bin/sh\nexit 0\n')
+    (temp / 'wslu/wslview').chmod(0o755)
+    env_out = temp / 'tui-env.json'
+    p = subprocess.run(['bash', str(repo / 'run-tui.sh')], env=dict(e, MOCK_LDCACHE=have_icu, MOCK_ENV_OUT=str(env_out)),
+                       capture_output=True, text=True)
+    check(p.returncode == 0 and 'copy to clipboard will not work in taskmgr' in p.stderr and 'sudo apt install xclip' in p.stderr, p.stderr)
+    check(json.loads(env_out.read_text())['BROWSER'] is None, 'no BROWSER outside WSL')
+    p = subprocess.run(['bash', str(repo / 'run-tui.sh')], env=dict(e, MOCK_LDCACHE=have_icu, MOCK_ENV_OUT=str(env_out), TASKMGR_ASSUME_WSL='1',
+                                                                    PATH=f'/mnt/c/Windows/System32:{temp / "wslu"}:{apt_path}'),
+                       capture_output=True, text=True)
+    seen = json.loads(env_out.read_text())
+    check(p.returncode == 0 and seen['BROWSER'] == 'wslview' and seen['PATH'].endswith(':/mnt/c/Windows/System32')
+          and seen['PATH'].startswith(str(temp / 'wslu')), p.stderr, seen)
+    p = subprocess.run(['bash', str(repo / 'run-tui.sh')], env=dict(e, MOCK_LDCACHE=have_icu, TASKMGR_ASSUME_WSL='1'), capture_output=True, text=True)
+    check(p.returncode == 0 and 'sudo apt install wslu xdg-utils' in p.stderr, p.stderr)
 
     # run-tui.sh picks net10.0 with a .NET 10 SDK listed after a .NET 8 one (pipefail/SIGPIPE fix).
     e = dict(base_env, MOCK_UNAME='Linux', DOTNET=str(fakes / 'dotnet'))
