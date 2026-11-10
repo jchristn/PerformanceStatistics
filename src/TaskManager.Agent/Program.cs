@@ -34,7 +34,7 @@ namespace TaskManager.Agent
                 return 2;
             }
 
-            builder.Services.AddWindowsService(o => o.ServiceName = "TaskManager Agent");
+            builder.Services.AddWindowsService(o => o.ServiceName = "TaskManagerAgent");
             builder.Services.AddSystemd();
             builder.Services.AddSingleton(settings);
             builder.Services.AddHostedService<AgentWorker>();

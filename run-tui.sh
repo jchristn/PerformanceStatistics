@@ -20,8 +20,15 @@ if [ -z "$DOTNET" ]; then
 fi
 [ -n "$DOTNET" ] || { echo "The .NET SDK (8 or 10) is required: https://dot.net" >&2; exit 1; }
 
-FRAMEWORK=net10.0
-"$DOTNET" --list-sdks | grep -q '^10\.' || FRAMEWORK=net8.0
+# Capture first: under 'set -o pipefail', '"$DOTNET" --list-sdks | grep -q' can fail with SIGPIPE when
+# grep exits early, which would silently pick net8.0 on a machine with a .NET 10 SDK.
+SDKS="$("$DOTNET" --list-sdks 2>/dev/null || true)"
+case "
+$SDKS" in
+  *"
+1"[0-9]"."*) FRAMEWORK=net10.0 ;;
+  *) FRAMEWORK=net8.0 ;;
+esac
 
 # Build as the invoking user so a sudo run does not leave root-owned build output behind.
 BUILD=("$DOTNET" build src/TaskManager.Tui/TaskManager.Tui.csproj -c Release -f "$FRAMEWORK" -nologo -v quiet)

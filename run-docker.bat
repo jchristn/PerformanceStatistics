@@ -6,7 +6,7 @@ rem   run-docker.bat down             stop (history is kept in the taskmgr-data 
 rem   run-docker.bat logs ^| ps ^| restart
 rem
 rem To monitor this Windows machine, install the native agent as Administrator:
-rem   scripts\agent\windows\install.bat http://localhost:8080 AGENT_KEY
+rem   scripts\agent\windows\install.bat --server http://localhost:8080 --key AGENT_KEY
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 
@@ -48,7 +48,7 @@ if /i "%ACTION%"=="up" (
   echo   Server:    http://localhost:!SERVER_PORT! ^(agents use TASKMGR_AGENT_KEY from %ENV_FILE%^)
   echo.
   echo Add machines by installing the agent on each one as Administrator or root, for example:
-  echo   scripts\agent\windows\install.bat http://^<this-host^>:!SERVER_PORT! ^<agent key^>
+  echo   scripts\agent\windows\install.bat --server http://^<this-host^>:!SERVER_PORT! --key ^<agent key^>
   echo An agent without admin privileges reports only what it can see: some processes may be hidden or show n/a.
   exit /b 0
 )

@@ -26,7 +26,8 @@ docker info >/dev/null 2>&1 || { echo "The Docker daemon is not running. Start D
 
 ENV_FILE=docker/.env
 if [ ! -f "$ENV_FILE" ]; then
-  random() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24; }
+  # head closes the pipe early, so tr gets SIGPIPE; '|| true' keeps that from counting under pipefail.
+  random() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24 || true; }
   umask 077
   sed -e "s/^TASKMGR_ADMIN_PASSWORD=.*/TASKMGR_ADMIN_PASSWORD=$(random)/" \
       -e "s/^TASKMGR_AGENT_KEY=.*/TASKMGR_AGENT_KEY=$(random)/" \
@@ -34,14 +35,21 @@ if [ ! -f "$ENV_FILE" ]; then
   echo "Created $ENV_FILE with a random admin password and agent key."
 fi
 
-value() { grep -E "^$1=" "$ENV_FILE" | tail -1 | cut -d= -f2-; }
+# Prints the last value of $1 in the env file, or nothing. awk instead of grep: under 'set -o pipefail'
+# a missing key made 'grep | tail' fail, which aborted the script after 'compose up'.
+value() { awk -v k="$1" 'index($0, k "=") == 1 { v = substr($0, length(k) + 2) } END { print v }' "$ENV_FILE"; }
 COMPOSE=(docker compose -f docker/compose.yaml --env-file "$ENV_FILE")
 
 case "$ACTION" in
   up)
-    if [ ${#PROFILE[@]} -gt 0 ] && [ "$(uname -s)" != "Linux" ]; then
-      echo "Note: on Docker Desktop the linux-agent monitors Docker's Linux VM, not this machine."
-      echo "      To monitor this machine, install the native agent: scripts/agent/$( [ "$(uname -s)" = Darwin ] && echo macos || echo linux )/install.sh"
+    if [ ${#PROFILE[@]} -gt 0 ]; then
+      if [ "$(uname -s)" = Darwin ]; then
+        echo "Note: on Docker Desktop the linux-agent monitors Docker's Linux VM, not this machine."
+        echo "      To monitor this machine, install the native agent: scripts/agent/macos/install.sh"
+      elif [ -n "${WSL_DISTRO_NAME:-}" ]; then
+        echo "Note: under WSL the linux-agent monitors Docker's Linux VM, not Windows or this distro."
+        echo "      Install the native agent instead: scripts\\agent\\windows\\install.bat (Windows) or scripts/agent/wsl2/install.sh (this distro)."
+      fi
     fi
     "${COMPOSE[@]}" ${PROFILE[@]+"${PROFILE[@]}"} up -d --build
     WEB_PORT="$(value TASKMGR_WEB_PORT)"; WEB_PORT="${WEB_PORT:-3000}"
@@ -52,7 +60,8 @@ case "$ACTION" in
     echo "  Server:    http://localhost:$SERVER_PORT (agents use TASKMGR_AGENT_KEY from $ENV_FILE)"
     echo
     echo "Add machines by installing the agent on each one as root/Administrator, for example:"
-    echo "  sudo scripts/agent/linux/install.sh --server http://<this-host>:$SERVER_PORT --key <agent key>"
+    echo "  scripts/agent/linux/install.sh --server http://<this-host>:$SERVER_PORT --key <agent key>   (also macos, wsl2, wsl; it calls sudo)"
+    echo "  scripts\\agent\\windows\\install.bat --server http://<this-host>:$SERVER_PORT --key <agent key>   (from an elevated prompt)"
     echo "An agent without admin privileges reports only what it can see: some processes may be hidden or show n/a."
     ;;
   down) "${COMPOSE[@]}" --profile linux-agent down ;;

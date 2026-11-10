@@ -100,17 +100,17 @@ The server listens on port 8080 and the web app on port 3000; both ports can be 
 
 Run the agent natively on each machine you want to watch. It must run natively: on macOS and Windows, Docker Desktop runs containers in a Linux VM, so a container would report the VM instead of the machine.
 
-| OS | Install (as root or Administrator) |
+| OS | Install |
 |---|---|
-| Linux (systemd) | `sudo scripts/agent/linux/install.sh --server http://monitor:8080 --key <agent key> [--allowed-actions Kill,Suspend,Resume,SetPriority]` |
-| macOS (launchd) | `sudo scripts/agent/macos/install.sh --server http://monitor:8080 --key <agent key> [...]` |
-| Windows (service) | `scripts\agent\windows\install.bat http://monitor:8080 <agent key> "" "Kill,Suspend,Resume"` (quote the action list: cmd.exe splits unquoted arguments at commas) |
-| WSL 2 | `scripts/agent/wsl2/install.sh --server http://monitor:8080 --key <agent key> [...]` (as your normal user; it calls sudo) |
+| Linux (systemd) | `scripts/agent/linux/install.sh --server http://monitor:8080 --key <agent key> [--host-id ID] [--allowed-actions Kill,Suspend,Resume,SetPriority]` |
+| macOS (launchd) | `scripts/agent/macos/install.sh --server http://monitor:8080 --key <agent key> [...]` |
+| Windows (service) | `scripts\agent\windows\install.bat --server http://monitor:8080 --key <agent key> [--allowed-actions "Kill,Suspend,Resume"]` from an elevated prompt (quote values that contain `,` `;` `=` or spaces: cmd.exe splits unquoted arguments there) |
+| WSL 2 | `scripts/agent/wsl2/install.sh --server http://monitor:8080 --key <agent key> [...]` |
 | WSL 1 | `scripts/agent/wsl/install.sh --server http://monitor:8080 --key <agent key> [...]` |
 
-Each folder also has an uninstall script and a reinstall script (uninstall, then install with the same arguments).
+Every folder has the same three scripts with the same options: `install` (fails if the agent is already installed), `reinstall` (builds first, then stops and replaces the installed agent; works when none is installed) and `uninstall` (removes everything the install wrote; succeeds when nothing is installed). `--key` is asked for without echo when omitted, and `-h`/`--help` prints usage. The agent runs as root or LocalSystem so it can see every process: on Linux, macOS and WSL, run the scripts as your normal user (they build as you and call `sudo` for the steps that need root) or with `sudo`. The scripts build the agent with the .NET 10 SDK when it is installed, otherwise with .NET 8, and publish it self-contained. The agent key is kept where only root or administrators can read it: `/etc/taskmgr-agent.env` (root:root, 0600) on Linux and WSL, `appsettings.json` in `/usr/local/taskmgr-agent` (root:wheel, 0600) on macOS, and `appsettings.json` in `%ProgramFiles%\TaskManagerAgent` (SYSTEM and Administrators only) on Windows. The Windows uninstall also removes the agent's Application event log source (`taskmgr-agent`).
 
-The WSL agent reports the WSL environment (on WSL 2, the Linux VM and the distro's processes), not the Windows host; to monitor Windows, install the Windows agent from an elevated prompt. With systemd enabled in the distro (`[boot] systemd=true` in `/etc/wsl.conf`) the WSL agent is a systemd service; otherwise a hidden launcher in the Windows Startup folder starts it at Windows login. Its host id defaults to `<hostname>-wsl`, because WSL uses the Windows computer name as its hostname. To monitor the Linux Docker host itself, add `--profile linux-agent` to the compose command. That agent runs with `pid: host`, `network_mode: host`, `SYS_PTRACE`, and the host's `/proc` and `/sys` mounted at `/host`, and it sets `PERFSTATS_HOST_ROOT`.
+The WSL agent reports the WSL environment (on WSL 2, the Linux VM and the distro's processes), not the Windows host; to monitor Windows, install the Windows agent from an elevated prompt. On WSL 2 with systemd enabled in the distro (`[boot] systemd=true` in `/etc/wsl.conf`) the agent is a systemd service, which runs while the distro is running; otherwise (and always on WSL 1, which has no systemd) a hidden launcher in the Windows Startup folder starts it as root at Windows login and keeps the distro running. Its host id defaults to `<hostname>-wsl`, because WSL uses the Windows computer name as its hostname. To monitor the Linux Docker host itself, add `--profile linux-agent` to the compose command. That agent runs with `pid: host`, `network_mode: host`, `SYS_PTRACE`, and the host's `/proc` and `/sys` mounted at `/host`, and it sets `PERFSTATS_HOST_ROOT`.
 
 ### Settings
 
