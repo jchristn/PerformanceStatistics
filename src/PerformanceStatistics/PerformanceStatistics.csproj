@@ -6,7 +6,7 @@
 		<DocumentationFile>PerformanceStatistics.xml</DocumentationFile>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title></Title>
-		<Version>2.2.0</Version>
+		<Version>2.2.1</Version>
 		<Authors>Joel Christner</Authors>
 		<Company>Joel Christner</Company>
 		<Description>Cross-platform .NET library for capturing real-time performance statistics. Supports Windows, Linux, and macOS. Monitor CPU, memory, disk, and process metrics with a simple API.</Description>
@@ -15,13 +15,16 @@
 		<PackageIcon>logo.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/jchristn/PerformanceStatistics</RepositoryUrl>
-		<RepositoryType>github</RepositoryType>
+		<RepositoryType>git</RepositoryType>
 		<PackageTags>performance counters</PackageTags>
 		<ApplicationIcon>logo.ico</ApplicationIcon>
 		<PackageReleaseNotes>Task-manager metrics: GetAllProcesses() with executable path, command line, user, parent PID, start time, state, priority, CPU time, and disk I/O per process; per-core CPU, memory total/used, swap, disk bytes/sec, per-interface network throughput, volumes, load averages, and SystemInfo; cross-platform ProcessActions (kill, kill tree, priority, suspend, resume); PERFSTATS_HOST_ROOT for containerized Linux agents. See CHANGELOG.md.</PackageReleaseNotes>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
 	</PropertyGroup>
 
 	<ItemGroup>

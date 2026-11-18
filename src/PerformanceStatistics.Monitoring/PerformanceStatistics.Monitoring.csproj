@@ -7,7 +7,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <RootNamespace>PerformanceStatistics.Monitoring</RootNamespace>
     <PackageId>PerformanceStatistics.Monitoring</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Joel Christner</Authors>
     <Description>Shared monitoring layer for PerformanceStatistics: host snapshots, a sampling loop, in-memory and SQLite history with downsampling, a cross-platform metric catalog, process accounting, action policies, and a client for the TaskManager server.</Description>
     <PackageTags>performance monitoring task manager telemetry</PackageTags>
@@ -15,6 +15,14 @@
     <RepositoryUrl>https://github.com/jchristn/PerformanceStatistics</RepositoryUrl>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageIcon>logo.png</PackageIcon>
+    <Copyright>(c)2026 Joel Christner</Copyright>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +36,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PerformanceStatistics\PerformanceStatistics.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
 </Project>
